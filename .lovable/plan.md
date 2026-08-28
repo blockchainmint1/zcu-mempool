@@ -1,105 +1,118 @@
-# ZCU Explorer Indexer Plan
+# ZCU Explorer — Dedicated Indexer Box
 
-## What we found
+## Why a box
 
-The ZCU chain is extremely small:
-- 26,355 blocks total
-- **4 transactions** in the entire chain history
-- 5 unique addresses
-- 0 contract deployments, 0 event logs
-- `eth_getLogs` works (for future token transfers)
-- `trace_*` methods are NOT available (no native "txs by address" lookup)
+The chain is tiny today (26,355 blocks, 4 transactions, 5 addresses, no contracts),
+but it's brand new and will get real usage. A dedicated indexer box means the
+explorer never has to be re-architected when volume arrives — it scales from 4 txs
+to millions on the same design.
 
-Because there is no trace API and geth can't list transactions by address, address
-history and richlist **require an indexer**. But the chain is so small that a full
-sync is near-instant.
+`trace_*` RPC methods are not available on the node, and geth cannot list
+transactions by address, so an indexer is the only way to serve address history,
+token transfers and a richlist.
 
-## Architecture: in-app indexer backed by Lovable Cloud
-
-No separate indexer box. The app itself owns the index:
+## Architecture
 
 ```
-ZCU geth node (RPC)
-      │
-      ▼
-Indexer server fn (batch: fetch N blocks → store txs + logs + addresses)
-      │  triggered by cron endpoint /api/public/index
-      ▼
-Lovable Cloud Postgres
-  - transactions table (from, to, value, block, status, fee, …)
-  - logs table (address, topics, data — for token transfers)
-  - tracked_addresses table (every address that ever sent/received/mined)
-      │
-      ▼
-API routes read from DB for history/richlist, RPC for live balance/nonce
+ZCU geth node (node-zcu.honest.money)
+        │  JSON-RPC
+        ▼
+┌─────────────────────────────────────────┐
+│  INDEXER BOX  (new EC2, t3.small)       │
+│                                         │
+│  postgres        ← indexed chain data   │
+│  zcu-indexer     ← follows chain tip    │
+│  zcu-api         ← read-only JSON API   │
+│  nginx + certbot ← TLS termination      │
+└─────────────────────────────────────────┘
+        │  https://indexer-zcu.honest.money
+        ▼
+Lovable explorer /api/v1/* routes
+        │
+        ▼
+Address history · Token transfers · Richlist
 ```
 
-## Why this works here
+The explorer keeps reading the geth node directly for live data (tip, gas price,
+txpool, block details). It only calls the indexer for the things that require
+history.
 
-- Full chain sync = 26k blocks × near-zero txs = finishes in one batch run
-- Ongoing: ~1 new block every 4 min, near-zero txs → indexer stays current with a
-  cron tick every few minutes
-- Lovable Cloud Postgres is included, zero external setup
-- The Worker runtime can't run a long-lived process, but a batch server fn that
-  indexes 200 blocks per invocation finishes well within limits
+## The box
 
-## Step 1 — Enable Lovable Cloud
+- New EC2 instance, **t3.small** (2 vCPU / 2 GB) — plenty for this chain, roughly
+  $15/mo. Can resize later without redesign.
+- 30 GB gp3 disk
+- Ubuntu 24.04
+- Security group: SSH (22) from your IP, HTTPS (443) open
+- DNS: `indexer-zcu.honest.money` → the box's elastic IP
 
-Enables Postgres + server functions. One action, no external accounts.
+Everything runs in Docker Compose, same pattern as the TXC stack, so it's familiar
+and restarts on boot automatically.
 
-## Step 2 — Database migration
+## Services on the box
 
-Tables (all in `public` schema, with RLS disabled for public reads via service-role
-writes):
+**postgres** — stores the index. Tables:
+- `blocks` — height, hash, miner, timestamp, difficulty, gas, tx_count, size
+- `transactions` — hash, block, from, to, value, gas, gas_price, fee, status, nonce,
+  input, method_id, contract_address, timestamp
+- `logs` — tx_hash, block, address, topic0..3, data, log_index (token transfers)
+- `addresses` — address, first_seen, last_seen, tx_count, is_contract, balance_wei
+- `index_state` — last_indexed_block, reorg-safe checkpoint
 
-- `indexed_txs` — one row per transaction: hash, block_number, block_hash, from, to,
-  value, gas, gas_price, fee_wei, status, nonce, input, method_id, contract_address,
-  timestamp, tx_index
-- `indexed_logs` — one row per log: tx_hash, block_number, address, topic0..3, data,
-  log_index, timestamp
-- `tracked_addresses` — address, first_seen_block, last_seen_block, is_contract,
-  cached_balance_wei, balance_updated_at
-- `index_state` — single row tracking `last_indexed_block`
+**zcu-indexer** — a small Node service that:
+1. Reads `last_indexed_block`
+2. Batch-fetches the next blocks over JSON-RPC (full txs + receipts)
+3. Writes blocks, txs, logs, and address rows in one transaction
+4. Handles reorgs by comparing parent hashes and rolling back if needed
+5. Refreshes address balances for the richlist
+6. Sleeps briefly and repeats — always following the tip
 
-## Step 3 — Indexer server function
+Initial backfill of 26k blocks finishes in well under a minute.
 
-`src/lib/zcu/indexer.functions.ts`:
+**zcu-api** — read-only HTTP API the explorer calls:
+- `GET /address/:addr/txs?page=` — address transaction history
+- `GET /address/:addr/tokens` — token transfers for an address
+- `GET /richlist?limit=` — top holders by balance
+- `GET /stats` — total txs, total addresses, indexer lag
+- Protected by a bearer token so only the explorer can call it
 
-1. Read `index_state.last_indexed_block`
-2. Fetch next batch (e.g. 250 blocks) via `eth_getBlockByNumber` with full txs
-3. For each block: insert txs, fetch + insert receipts/logs, track addresses
-4. Update `index_state`
-5. Return `{ indexed_to: N, new_txs: M }`
+**nginx + certbot** — TLS on `indexer-zcu.honest.money`.
 
-Called from a cron endpoint `src/routes/api/public/index.ts` (public, secured by a
-bearer secret) so it can be triggered by a scheduler.
+## Explorer changes (this repo)
 
-## Step 4 — Richlist balance refresh
-
-A companion server fn that iterates `tracked_addresses`, calls `eth_getBalance` for
-each, and updates `cached_balance_wei`. With ~5–50 addresses this is one batch RPC
-call. Richlist = `ORDER BY cached_balance_wei DESC`.
-
-## Step 5 — Enhanced API routes
-
-- `/api/v1/address/$addr` — add `transactions[]` from `indexed_txs` (paginated)
-- `/api/v1/address/$addr/tokens` — token transfers from `indexed_logs`
-- `/api/v1/richlist` — top N by cached balance
-- Keep live balance/nonce from RPC for the "current state" card
-
-## Step 6 — Frontend
-
-- Address page: show transaction history table (was a "needs indexer" placeholder)
+- New `src/lib/zcu/indexer.ts` — server-side client for the indexer API, reading the
+  base URL and bearer token from secrets
+- `/api/v1/address/$addr` — add paginated `transactions[]`
+- New `/api/v1/address/$addr/tokens` route
+- New `/api/v1/richlist` route
+- Address page: real transaction history table replacing the "needs indexer" notice
 - Restore `/richlist` route with a top-holders table
-- Mining page already works from RPC; no change
+- Graceful degradation: if the indexer is unreachable, pages still render live RPC
+  data and show a small "history temporarily unavailable" note
 
-## What this does NOT do
+Two secrets to add: `ZCU_INDEXER_URL` and `ZCU_INDEXER_TOKEN`.
 
-- No separate server/box to provision or maintain
-- No long-running process — cron triggers short batch runs
-- Token transfers page stays minimal until contracts exist on chain (none today)
+## What I'll hand you
 
-## Cron
+Since you'll be doing the server side, you get **exact copy/paste commands** for
+every step, in order, with prerequisites spelled out:
 
-After publish, set a cron to hit `https://<project>.lovable.app/api/public/index`
-every 5 minutes with the bearer secret. Exact `curl` command provided when ready.
+1. Launching the EC2 instance and security group (console clicks, described)
+2. The DNS record to add
+3. One block to paste that installs Docker
+4. One block to paste that creates the whole stack (compose file, indexer, API,
+   nginx config, schema) — written into a git repo so updates are a `git pull`
+5. One block to issue the TLS certificate
+6. One block to start it and watch the backfill
+7. A verification command that proves the API is answering
+
+Nothing will require you to hand-edit a config file in a terminal editor.
+
+## Order of work
+
+1. You launch the box + add DNS (I give you the exact settings)
+2. I write the indexer stack into this repo under `infra/zcu-indexer/`
+3. You paste the install commands
+4. I wire the explorer up to the indexer and add the secrets
+5. We verify address history and richlist end to end
+6. Retire `scan.zerochill.com`
