@@ -176,8 +176,8 @@ function TokenPage() {
                   >
                     <td className="py-2 pr-3">
                       <Link
-                        to="/tx/$hash"
-                        params={{ hash: x.txHash }}
+                        to="/tx/$txid"
+                        params={{ txid: x.txHash }}
                         className="text-primary hover:underline"
                       >
                         {shortHash(x.txHash, 6, 6)}
