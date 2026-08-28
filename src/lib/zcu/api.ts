@@ -7,7 +7,9 @@
 
 import { ZCU_API_BASE } from "./network";
 import type {
-  ZcuAddress,
+  ZcuAddressDetail,
+  ZcuRichlist,
+  ZcuTokenTransferPage,
   ZcuBlock,
   ZcuChainInfo,
   ZcuHashrate,
@@ -45,7 +47,15 @@ export const zcu = {
   tx: (hash: string) => get<ZcuTx>(`/tx/${hash}`),
 
   // addresses
-  address: (addr: string) => get<ZcuAddress>(`/address/${addr}`),
+  address: (addr: string, page = 1, pageSize = 25) =>
+    get<ZcuAddressDetail>(`/address/${addr}?page=${page}&pageSize=${pageSize}`),
+  addressTokens: (addr: string, page = 1, pageSize = 25) =>
+    get<ZcuTokenTransferPage>(`/address/${addr}/tokens?page=${page}&pageSize=${pageSize}`),
+
+  // richlist (indexer-backed)
+  richlist: (limit = 100, offset = 0) =>
+    get<ZcuRichlist>(`/richlist?limit=${limit}&offset=${offset}`),
+
 
   // mempool
   mempool: () => get<ZcuMempool>("/mempool"),

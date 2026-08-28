@@ -1,0 +1,81 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-zcu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-zcu_index}
+      # Deterministic collation so index ordering never shifts under us.
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zcu} -d ${POSTGRES_DB:-zcu_index}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Not published to the host: only the other containers reach it.
+    expose:
+      - "5432"
+
+  indexer:
+    build: ./indexer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-zcu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-zcu_index}
+      ZCU_RPC_URL: ${ZCU_RPC_URL:-https://node-zcu.honest.money}
+      BATCH_SIZE: ${BATCH_SIZE:-50}
+      POLL_MS: ${POLL_MS:-5000}
+      BALANCE_INTERVAL_MS: ${BALANCE_INTERVAL_MS:-60000}
+      REORG_DEPTH: ${REORG_DEPTH:-12}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-zcu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-zcu_index}
+      API_TOKEN: ${API_TOKEN:?API_TOKEN is required}
+      PORT: 8080
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./data/certbot/conf:/etc/letsencrypt:ro
+      - ./data/certbot/www:/var/www/certbot:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
