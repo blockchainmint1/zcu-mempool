@@ -196,3 +196,90 @@ export interface ZcuRichlist {
   indexedSupply: string;
   holders: ZcuHolder[];
 }
+
+// ---------- tokens ----------
+
+export interface ZcuTokenMeta {
+  address: string;
+  type: "erc20" | "erc721" | "unknown";
+  name: string | null;
+  symbol: string | null;
+  decimals: number | null;
+  totalSupply: string | null;
+  firstSeenBlock: number | null;
+}
+
+export interface ZcuTokenListItem extends ZcuTokenMeta {
+  transferCount: number;
+  firstBlock: number;
+  lastBlock: number;
+  lastTransferAt: number;
+}
+
+export interface ZcuTokenList {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  tokens: ZcuTokenListItem[];
+}
+
+export interface ZcuTokenHolder {
+  rank: number;
+  address: string;
+  balance: string;
+  shareBps: number;
+}
+
+export interface ZcuTokenDetail {
+  token: ZcuTokenMeta & {
+    transferCount: number;
+    holderCount: number;
+    firstBlock: number | null;
+    lastBlock: number | null;
+    lastTransferAt: number | null;
+    holdersTruncated: boolean;
+  };
+  holders: {
+    holderCount: number;
+    circulating: string;
+    truncated: boolean;
+    holders: ZcuTokenHolder[];
+  } | null;
+  transfers: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+    transfers: {
+      txHash: string;
+      blockNumber: number;
+      logIndex: number;
+      from: string | null;
+      to: string | null;
+      value: string | null;
+      tokenId: string | null;
+      type: "erc20" | "erc721";
+      timestamp: number;
+    }[];
+  } | null;
+}
+
+// ---------- verified contracts ----------
+
+export type ZcuContract =
+  | { address: string; verified: false }
+  | {
+      address: string;
+      verified: true;
+      name: string;
+      compilerVersion: string;
+      evmVersion: string | null;
+      optimization: boolean;
+      optimizationRuns: number | null;
+      license: string | null;
+      sourceCode: string;
+      abi: unknown[];
+      constructorArguments: string | null;
+      verifiedAt: string;
+    };

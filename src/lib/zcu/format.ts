@@ -153,3 +153,32 @@ export function normalizeHex(raw: string): string {
 }
 
 export const NETWORK = ZCU_NETWORK;
+
+/**
+ * Token amount → human string, honouring the token's own decimals. Unknown
+ * decimals means we cannot scale it, so the raw integer is shown as-is.
+ */
+export function formatTokenAmount(
+  raw: string | bigint,
+  decimals: number | null,
+  maxFrac = 6,
+): string {
+  const v = toBig(raw);
+  if (decimals == null) return v.toLocaleString();
+  if (decimals === 0) return v.toLocaleString();
+
+  const base = 10n ** BigInt(decimals);
+  const neg = v < 0n;
+  const abs = neg ? -v : v;
+  const whole = abs / base;
+  const frac = abs % base;
+  const sign = neg ? "-" : "";
+  if (frac === 0n) return `${sign}${whole.toLocaleString()}`;
+
+  const fracStr = frac
+    .toString()
+    .padStart(decimals, "0")
+    .slice(0, maxFrac)
+    .replace(/0+$/, "");
+  return fracStr ? `${sign}${whole.toLocaleString()}.${fracStr}` : `${sign}${whole.toLocaleString()}`;
+}

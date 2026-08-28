@@ -242,6 +242,85 @@ function TokenTable({ transfers }: { transfers: ZcuTokenTransfer[] }) {
   );
 }
 
+/**
+ * Verified-source panel. Only rendered for contracts, so the request is never
+ * made for plain accounts.
+ */
+function ContractPanel({ addr }: { addr: string }) {
+  const [showSource, setShowSource] = useState(false);
+
+  const q = useQuery({
+    queryKey: ["zcu", "contract", addr],
+    queryFn: () => zcu.contract(addr),
+    retry: 1,
+  });
+
+  const c = q.data;
+
+  return (
+    <section className="rounded-md surface-2 border border-border p-4 md:p-6 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-lg">Contract source</h2>
+        <Link
+          to="/verify"
+          search={{ address: addr }}
+          className="px-3 py-1 rounded-sm border border-border text-xs font-mono hover:text-primary"
+        >
+          {c?.verified ? "Re-verify" : "Verify source"}
+        </Link>
+      </div>
+
+      {!c ? (
+        <p className="text-xs font-mono text-muted-foreground">Checking verification status…</p>
+      ) : !c.verified ? (
+        <p className="text-xs font-mono text-muted-foreground">
+          Source code has not been verified for this contract.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          <dl className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
+            <div>
+              <dt className="text-[10px] uppercase tracking-widest text-muted-foreground">Name</dt>
+              <dd>{c.name}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-widest text-muted-foreground">Compiler</dt>
+              <dd className="break-all">{c.compilerVersion}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-widest text-muted-foreground">Optimizer</dt>
+              <dd>{c.optimization ? `On (${c.optimizationRuns})` : "Off"}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-widest text-muted-foreground">License</dt>
+              <dd>{c.license ?? "—"}</dd>
+            </div>
+          </dl>
+
+          <button
+            type="button"
+            onClick={() => setShowSource((v) => !v)}
+            className="text-xs font-mono text-primary hover:underline"
+          >
+            {showSource ? "Hide source" : "Show source & ABI"}
+          </button>
+
+          {showSource && (
+            <div className="space-y-3">
+              <pre className="max-h-96 overflow-auto rounded-sm border border-border bg-background p-3 text-[11px] font-mono whitespace-pre">
+                {c.sourceCode}
+              </pre>
+              <pre className="max-h-64 overflow-auto rounded-sm border border-border bg-background p-3 text-[11px] font-mono whitespace-pre">
+                {JSON.stringify(c.abi, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function AddressPage() {
   const { addr } = Route.useParams();
   const [tab, setTab] = useState<"txs" | "tokens">("txs");
@@ -318,6 +397,8 @@ function AddressPage() {
           hint={a?.isContract ? `${formatBytes(a.codeSize)} of code` : "externally owned"}
         />
       </div>
+
+      {a?.isContract && <ContractPanel addr={addr} />}
 
       <section className="rounded-md surface-2 border border-border p-4 md:p-6 space-y-3">
         <div className="flex items-center gap-4 border-b border-border pb-3">

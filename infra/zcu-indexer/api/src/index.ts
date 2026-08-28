@@ -7,6 +7,14 @@
 import http from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import pg from "pg";
+import {
+  tokenList,
+  tokenSummary,
+  tokenHolders,
+  tokenTransfers,
+  addressTokenBalances,
+} from "./tokens.js";
+import { getContract, listCompilers, verifyContract, VerifyError } from "./verify.js";
 
 const { Pool } = pg;
 
@@ -256,11 +264,33 @@ async function stats() {
 
 // ---------- router ----------
 
+const MAX_BODY_BYTES = 1_000_000;
+
+function readBody(req: http.IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks: Buffer[] = [];
+    req.on("data", (c: Buffer) => {
+      size += c.length;
+      if (size > MAX_BODY_BYTES) {
+        reject(new Error("Body too large"));
+        req.destroy();
+        return;
+      }
+      chunks.push(c);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    req.on("error", reject);
+  });
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", "http://localhost");
   const path = url.pathname.replace(/\/+$/, "") || "/";
 
-  if (req.method !== "GET") return json(res, 405, { error: "Method not allowed" });
+  if (req.method !== "GET" && req.method !== "POST") {
+    return json(res, 405, { error: "Method not allowed" });
+  }
 
   // Unauthenticated liveness probe for docker healthcheck.
   if (path === "/health") {
@@ -275,18 +305,67 @@ const server = http.createServer(async (req, res) => {
   if (!authorized(req)) return json(res, 401, { error: "Unauthorized" });
 
   try {
+    // Verification is the only write path in this service.
+    if (req.method === "POST") {
+      if (path !== "/verify") return json(res, 404, { error: "Not found" });
+      let body: Record<string, unknown>;
+      try {
+        body = JSON.parse(await readBody(req));
+      } catch {
+        return json(res, 400, { error: "Invalid JSON body" });
+      }
+      try {
+        const result = await verifyContract(pool, {
+          address: String(body["address"] ?? ""),
+          name: String(body["name"] ?? ""),
+          compilerVersion: String(body["compilerVersion"] ?? ""),
+          source: String(body["source"] ?? ""),
+          optimization: !!body["optimization"],
+          optimizationRuns: Number(body["optimizationRuns"] ?? 200),
+          evmVersion: body["evmVersion"] ? String(body["evmVersion"]) : null,
+          license: body["license"] ? String(body["license"]) : null,
+          constructorArguments: body["constructorArguments"]
+            ? String(body["constructorArguments"])
+            : null,
+        });
+        return json(res, 200, result);
+      } catch (e) {
+        if (e instanceof VerifyError) return json(res, 400, { error: e.message });
+        throw e;
+      }
+    }
+
     const page = intParam(url.searchParams.get("page"), 1, 1, 100_000);
     const pageSize = intParam(url.searchParams.get("pageSize"), 25, 1, MAX_PAGE_SIZE);
+    const limit = intParam(url.searchParams.get("limit"), 100, 1, 500);
+    const offset = intParam(url.searchParams.get("offset"), 0, 0, 1_000_000);
 
     if (path === "/stats") return json(res, 200, await stats());
 
-    if (path === "/richlist") {
-      const limit = intParam(url.searchParams.get("limit"), 100, 1, 500);
-      const offset = intParam(url.searchParams.get("offset"), 0, 0, 1_000_000);
-      return json(res, 200, await richlist(limit, offset));
+    if (path === "/richlist") return json(res, 200, await richlist(limit, offset));
+
+    if (path === "/tokens") return json(res, 200, await tokenList(pool, page, pageSize));
+
+    if (path === "/verify/compilers") return json(res, 200, await listCompilers());
+
+    const tokenMatch = /^\/token\/(0x[0-9a-fA-F]{40})(\/holders|\/transfers)?$/.exec(path);
+    if (tokenMatch) {
+      const token = tokenMatch[1]!.toLowerCase();
+      const sub = tokenMatch[2];
+      if (sub === "/holders") return json(res, 200, await tokenHolders(pool, token, limit, offset));
+      if (sub === "/transfers")
+        return json(res, 200, await tokenTransfers(pool, token, page, pageSize));
+      const summary = await tokenSummary(pool, token);
+      if (!summary) return json(res, 404, { error: "Unknown token" });
+      return json(res, 200, summary);
     }
 
-    const addrMatch = /^\/address\/(0x[0-9a-fA-F]{40})(\/txs|\/tokens)?$/.exec(path);
+    const contractMatch = /^\/contract\/(0x[0-9a-fA-F]{40})$/.exec(path);
+    if (contractMatch) {
+      return json(res, 200, await getContract(pool, contractMatch[1]!.toLowerCase()));
+    }
+
+    const addrMatch = /^\/address\/(0x[0-9a-fA-F]{40})(\/txs|\/tokens|\/balances)?$/.exec(path);
     if (addrMatch) {
       const addr = addrMatch[1]!.toLowerCase();
       if (!ADDRESS_RE.test(addr)) return json(res, 400, { error: "Invalid address" });
@@ -295,6 +374,7 @@ const server = http.createServer(async (req, res) => {
       if (sub === "/txs") return json(res, 200, await addressTxs(addr, page, pageSize));
       if (sub === "/tokens")
         return json(res, 200, await addressTokenTransfers(addr, page, pageSize));
+      if (sub === "/balances") return json(res, 200, await addressTokenBalances(pool, addr));
       return json(res, 200, await addressSummary(addr));
     }
 

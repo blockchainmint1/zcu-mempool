@@ -7,10 +7,13 @@ import { waitForDb, getIndexState, getStoredBlockHash, rollbackToHeight, pool } 
 import { getTipHeight, getBlocks, RPC_URL, type RawBlock } from "./rpc.js";
 import { indexRange } from "./index-range.js";
 import { refreshBalances } from "./balances.js";
+import { migrate } from "./migrate.js";
+import { refreshTokenMeta, refreshTokenSupplies } from "./token-meta.js";
 
 const BATCH_SIZE = Number(process.env["BATCH_SIZE"] ?? 50);
 const POLL_MS = Number(process.env["POLL_MS"] ?? 5000);
 const BALANCE_INTERVAL_MS = Number(process.env["BALANCE_INTERVAL_MS"] ?? 60_000);
+const TOKEN_INTERVAL_MS = Number(process.env["TOKEN_INTERVAL_MS"] ?? 30_000);
 // How far back to check for a reorg on each pass.
 const REORG_DEPTH = Number(process.env["REORG_DEPTH"] ?? 12);
 
@@ -107,6 +110,19 @@ async function syncLoop(): Promise<void> {
   }
 }
 
+async function tokenLoop(): Promise<void> {
+  while (!stopping) {
+    try {
+      const n = await refreshTokenMeta();
+      if (n > 0) log(`loaded metadata for ${n} token contract(s)`);
+      else await refreshTokenSupplies(10);
+    } catch (e) {
+      log(`token meta error: ${(e as Error).message}`);
+    }
+    await new Promise((r) => setTimeout(r, TOKEN_INTERVAL_MS));
+  }
+}
+
 async function main(): Promise<void> {
   log(`ZCU indexer starting`);
   log(`rpc=${RPC_URL} batch=${BATCH_SIZE} poll=${POLL_MS}ms`);
@@ -114,11 +130,15 @@ async function main(): Promise<void> {
   await waitForDb();
   log("database ready");
 
+  await migrate();
+  log("schema up to date");
+
   const state = await getIndexState();
   const tip = await getTipHeight();
   log(`checkpoint=${state.lastIndexedBlock} tip=${tip} (${tip - state.lastIndexedBlock} to go)`);
 
   void balanceLoop();
+  void tokenLoop();
   await syncLoop();
 }
 
