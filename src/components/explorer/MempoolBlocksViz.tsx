@@ -54,7 +54,7 @@ export function MempoolBlocksViz({ mempool }: Props) {
                   transactions
                 </div>
                 <div className="text-[10px] font-semibold mt-3 opacity-95">
-                  {b.minGwei.toFixed(b.minGwei < 1 ? 3 : 1)} – {b.maxGwei.toFixed(b.maxGwei < 1 ? 3 : 1)} gwei
+                  {range} gwei
                 </div>
                 <div className="text-[9px] opacity-70 mt-1">
                   {(b.gasTotal / 1e6).toFixed(2)}M gas
