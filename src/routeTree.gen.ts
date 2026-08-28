@@ -25,6 +25,7 @@ import { Route as AddressAddrRouteImport } from './routes/address.$addr'
 import { Route as MempoolBlockIndexRouteImport } from './routes/mempool.block.$index'
 import { Route as ApiV1ChainRouteImport } from './routes/api/v1/chain'
 import { Route as ApiV1BlocksIndexRouteImport } from './routes/api/v1/blocks.index'
+import { Route as ApiV1TxHashRouteImport } from './routes/api/v1/tx.$hash'
 import { Route as ApiV1BlockIdRouteImport } from './routes/api/v1/block.$id'
 import { Route as ApiV1BlocksTipHeightRouteImport } from './routes/api/v1/blocks.tip.height'
 import { Route as ApiV1BlockIdTxsRouteImport } from './routes/api/v1/block.$id.txs'
@@ -109,6 +110,11 @@ const ApiV1BlocksIndexRoute = ApiV1BlocksIndexRouteImport.update({
   path: '/api/v1/blocks/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1TxHashRoute = ApiV1TxHashRouteImport.update({
+  id: '/api/v1/tx/$hash',
+  path: '/api/v1/tx/$hash',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1BlockIdRoute = ApiV1BlockIdRouteImport.update({
   id: '/api/v1/block/$id',
   path: '/api/v1/block/$id',
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/chain': typeof ApiV1ChainRoute
   '/mempool/block/$index': typeof MempoolBlockIndexRoute
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
+  '/api/v1/tx/$hash': typeof ApiV1TxHashRoute
   '/api/v1/blocks/': typeof ApiV1BlocksIndexRoute
   '/api/v1/block/$id/txs': typeof ApiV1BlockIdTxsRoute
   '/api/v1/blocks/tip/height': typeof ApiV1BlocksTipHeightRoute
@@ -162,6 +169,7 @@ export interface FileRoutesByTo {
   '/api/v1/chain': typeof ApiV1ChainRoute
   '/mempool/block/$index': typeof MempoolBlockIndexRoute
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
+  '/api/v1/tx/$hash': typeof ApiV1TxHashRoute
   '/api/v1/blocks': typeof ApiV1BlocksIndexRoute
   '/api/v1/block/$id/txs': typeof ApiV1BlockIdTxsRoute
   '/api/v1/blocks/tip/height': typeof ApiV1BlocksTipHeightRoute
@@ -184,6 +192,7 @@ export interface FileRoutesById {
   '/api/v1/chain': typeof ApiV1ChainRoute
   '/mempool/block/$index': typeof MempoolBlockIndexRoute
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
+  '/api/v1/tx/$hash': typeof ApiV1TxHashRoute
   '/api/v1/blocks/': typeof ApiV1BlocksIndexRoute
   '/api/v1/block/$id/txs': typeof ApiV1BlockIdTxsRoute
   '/api/v1/blocks/tip/height': typeof ApiV1BlocksTipHeightRoute
@@ -207,6 +216,7 @@ export interface FileRouteTypes {
     | '/api/v1/chain'
     | '/mempool/block/$index'
     | '/api/v1/block/$id'
+    | '/api/v1/tx/$hash'
     | '/api/v1/blocks/'
     | '/api/v1/block/$id/txs'
     | '/api/v1/blocks/tip/height'
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/api/v1/chain'
     | '/mempool/block/$index'
     | '/api/v1/block/$id'
+    | '/api/v1/tx/$hash'
     | '/api/v1/blocks'
     | '/api/v1/block/$id/txs'
     | '/api/v1/blocks/tip/height'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/api/v1/chain'
     | '/mempool/block/$index'
     | '/api/v1/block/$id'
+    | '/api/v1/tx/$hash'
     | '/api/v1/blocks/'
     | '/api/v1/block/$id/txs'
     | '/api/v1/blocks/tip/height'
@@ -268,6 +280,7 @@ export interface RootRouteChildren {
   TxTxidRoute: typeof TxTxidRoute
   ApiV1ChainRoute: typeof ApiV1ChainRoute
   ApiV1BlockIdRoute: typeof ApiV1BlockIdRouteWithChildren
+  ApiV1TxHashRoute: typeof ApiV1TxHashRoute
   ApiV1BlocksIndexRoute: typeof ApiV1BlocksIndexRoute
   ApiV1BlocksTipHeightRoute: typeof ApiV1BlocksTipHeightRoute
 }
@@ -386,6 +399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1BlocksIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/tx/$hash': {
+      id: '/api/v1/tx/$hash'
+      path: '/api/v1/tx/$hash'
+      fullPath: '/api/v1/tx/$hash'
+      preLoaderRoute: typeof ApiV1TxHashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/block/$id': {
       id: '/api/v1/block/$id'
       path: '/api/v1/block/$id'
@@ -450,6 +470,7 @@ const rootRouteChildren: RootRouteChildren = {
   TxTxidRoute: TxTxidRoute,
   ApiV1ChainRoute: ApiV1ChainRoute,
   ApiV1BlockIdRoute: ApiV1BlockIdRouteWithChildren,
+  ApiV1TxHashRoute: ApiV1TxHashRoute,
   ApiV1BlocksIndexRoute: ApiV1BlocksIndexRoute,
   ApiV1BlocksTipHeightRoute: ApiV1BlocksTipHeightRoute,
 }
