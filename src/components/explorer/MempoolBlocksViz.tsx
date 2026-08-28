@@ -27,7 +27,9 @@ export function MempoolBlocksViz({ mempool }: Props) {
   return (
     <div className="flex items-end gap-3 overflow-x-auto pb-2">
       {buckets.map((b, i) => {
-        const mid = (b.minGwei + b.maxGwei) / 2;
+        const fmt = (v: number) => v.toFixed(v < 1 ? 3 : 1);
+        const mid = b.maxGwei == null ? b.minGwei * 1.5 : (b.minGwei + b.maxGwei) / 2;
+        const range = b.maxGwei == null ? `${fmt(b.minGwei)}+` : `${fmt(b.minGwei)} – ${fmt(b.maxGwei)}`;
         const color = gasColorVar(mid);
         // Fill height encodes how many txs sit in this price band.
         const filledPct = Math.max(6, (b.count / max) * 100);
