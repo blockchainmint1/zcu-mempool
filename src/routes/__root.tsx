@@ -124,6 +124,7 @@ function Header() {
             { to: "/mempool", label: "Txpool" },
             { to: "/blocks", label: "Blocks" },
             { to: "/mining", label: "Mining" },
+            { to: "/richlist", label: "Richlist" },
             { to: "/graphs", label: "Graphs" },
             { to: "/docs", label: "API" },
             { to: "/about", label: "About" },
@@ -166,6 +167,7 @@ function Footer() {
             <li><Link to="/mempool" className="hover:text-primary">Txpool</Link></li>
             <li><Link to="/blocks" className="hover:text-primary">Blocks</Link></li>
             <li><Link to="/mining" className="hover:text-primary">Mining</Link></li>
+            <li><Link to="/richlist" className="hover:text-primary">Richlist</Link></li>
             <li><Link to="/graphs" className="hover:text-primary">Graphs</Link></li>
             <li><Link to="/docs" className="hover:text-primary">API</Link></li>
           </ul>
