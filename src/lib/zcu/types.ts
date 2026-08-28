@@ -121,3 +121,78 @@ export interface ZcuMiner {
   blockCount: number;
   share: number;
 }
+
+// ---------- indexer-backed history ----------
+
+export interface ZcuAddressTx {
+  hash: string;
+  blockNumber: number;
+  transactionIndex: number;
+  from: string;
+  to: string | null;
+  value: string;
+  gas: number;
+  gasUsed: number | null;
+  gasPrice: string;
+  fee: string | null;
+  status: number | null;
+  nonce: number;
+  methodId: string | null;
+  contractAddress: string | null;
+  timestamp: number;
+  direction: "in" | "out";
+}
+
+export interface ZcuAddressHistory {
+  /** False when the indexer is unconfigured or unreachable. */
+  available: boolean;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  transactions: ZcuAddressTx[];
+}
+
+/** getAddress() plus indexer history, as served by /api/v1/address/:addr. */
+export interface ZcuAddressDetail extends ZcuAddress {
+  history: ZcuAddressHistory;
+}
+
+export interface ZcuTokenTransfer {
+  txHash: string;
+  blockNumber: number;
+  logIndex: number;
+  token: string;
+  from: string | null;
+  to: string | null;
+  value: string | null;
+  tokenId: string | null;
+  type: "erc20" | "erc721";
+  timestamp: number;
+  direction: "in" | "out";
+}
+
+export interface ZcuTokenTransferPage {
+  address: string;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  transfers: ZcuTokenTransfer[];
+}
+
+export interface ZcuHolder {
+  rank: number;
+  address: string;
+  balance: string;
+  /** Share of indexed supply in basis points (10000 = 100%). */
+  shareBps: number;
+  txCount: number;
+  isContract: boolean;
+  firstSeenBlock: number;
+}
+
+export interface ZcuRichlist {
+  indexedSupply: string;
+  holders: ZcuHolder[];
+}

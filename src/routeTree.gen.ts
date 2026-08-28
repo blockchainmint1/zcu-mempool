@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as RichlistRouteImport } from './routes/richlist'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MiningRouteImport } from './routes/mining'
 import { Route as MempoolRouteImport } from './routes/mempool'
@@ -24,6 +25,7 @@ import { Route as MempoolIndexRouteImport } from './routes/mempool.index'
 import { Route as TxTxidRouteImport } from './routes/tx.$txid'
 import { Route as BlockHashRouteImport } from './routes/block.$hash'
 import { Route as AddressAddrRouteImport } from './routes/address.$addr'
+import { Route as ApiV1RichlistRouteImport } from './routes/api/v1/richlist'
 import { Route as ApiV1ChainRouteImport } from './routes/api/v1/chain'
 import { Route as ApiV1MempoolIndexRouteImport } from './routes/api/v1/mempool.index'
 import { Route as ApiV1BlocksIndexRouteImport } from './routes/api/v1/blocks.index'
@@ -34,10 +36,16 @@ import { Route as ApiV1BlockIdRouteImport } from './routes/api/v1/block.$id'
 import { Route as ApiV1AddressAddrRouteImport } from './routes/api/v1/address.$addr'
 import { Route as ApiV1BlocksTipHeightRouteImport } from './routes/api/v1/blocks.tip.height'
 import { Route as ApiV1BlockIdTxsRouteImport } from './routes/api/v1/block.$id.txs'
+import { Route as ApiV1AddressAddrTokensRouteImport } from './routes/api/v1/address.$addr.tokens'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RichlistRoute = RichlistRouteImport.update({
+  id: '/richlist',
+  path: '/richlist',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -110,6 +118,11 @@ const AddressAddrRoute = AddressAddrRouteImport.update({
   path: '/address/$addr',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1RichlistRoute = ApiV1RichlistRouteImport.update({
+  id: '/api/v1/richlist',
+  path: '/api/v1/richlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1ChainRoute = ApiV1ChainRouteImport.update({
   id: '/api/v1/chain',
   path: '/api/v1/chain',
@@ -160,6 +173,11 @@ const ApiV1BlockIdTxsRoute = ApiV1BlockIdTxsRouteImport.update({
   path: '/txs',
   getParentRoute: () => ApiV1BlockIdRoute,
 } as any)
+const ApiV1AddressAddrTokensRoute = ApiV1AddressAddrTokensRouteImport.update({
+  id: '/tokens',
+  path: '/tokens',
+  getParentRoute: () => ApiV1AddressAddrRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -172,19 +190,22 @@ export interface FileRoutesByFullPath {
   '/mempool': typeof MempoolRouteWithChildren
   '/mining': typeof MiningRoute
   '/privacy': typeof PrivacyRoute
+  '/richlist': typeof RichlistRoute
   '/terms': typeof TermsRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
   '/tx/$txid': typeof TxTxidRoute
   '/mempool/': typeof MempoolIndexRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
-  '/api/v1/address/$addr': typeof ApiV1AddressAddrRoute
+  '/api/v1/richlist': typeof ApiV1RichlistRoute
+  '/api/v1/address/$addr': typeof ApiV1AddressAddrRouteWithChildren
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
   '/api/v1/mining/hashrate': typeof ApiV1MiningHashrateRoute
   '/api/v1/mining/miners': typeof ApiV1MiningMinersRoute
   '/api/v1/tx/$hash': typeof ApiV1TxHashRoute
   '/api/v1/blocks/': typeof ApiV1BlocksIndexRoute
   '/api/v1/mempool/': typeof ApiV1MempoolIndexRoute
+  '/api/v1/address/$addr/tokens': typeof ApiV1AddressAddrTokensRoute
   '/api/v1/block/$id/txs': typeof ApiV1BlockIdTxsRoute
   '/api/v1/blocks/tip/height': typeof ApiV1BlocksTipHeightRoute
 }
@@ -198,19 +219,22 @@ export interface FileRoutesByTo {
   '/manifesto': typeof ManifestoRoute
   '/mining': typeof MiningRoute
   '/privacy': typeof PrivacyRoute
+  '/richlist': typeof RichlistRoute
   '/terms': typeof TermsRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
   '/tx/$txid': typeof TxTxidRoute
   '/mempool': typeof MempoolIndexRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
-  '/api/v1/address/$addr': typeof ApiV1AddressAddrRoute
+  '/api/v1/richlist': typeof ApiV1RichlistRoute
+  '/api/v1/address/$addr': typeof ApiV1AddressAddrRouteWithChildren
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
   '/api/v1/mining/hashrate': typeof ApiV1MiningHashrateRoute
   '/api/v1/mining/miners': typeof ApiV1MiningMinersRoute
   '/api/v1/tx/$hash': typeof ApiV1TxHashRoute
   '/api/v1/blocks': typeof ApiV1BlocksIndexRoute
   '/api/v1/mempool': typeof ApiV1MempoolIndexRoute
+  '/api/v1/address/$addr/tokens': typeof ApiV1AddressAddrTokensRoute
   '/api/v1/block/$id/txs': typeof ApiV1BlockIdTxsRoute
   '/api/v1/blocks/tip/height': typeof ApiV1BlocksTipHeightRoute
 }
@@ -226,19 +250,22 @@ export interface FileRoutesById {
   '/mempool': typeof MempoolRouteWithChildren
   '/mining': typeof MiningRoute
   '/privacy': typeof PrivacyRoute
+  '/richlist': typeof RichlistRoute
   '/terms': typeof TermsRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
   '/tx/$txid': typeof TxTxidRoute
   '/mempool/': typeof MempoolIndexRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
-  '/api/v1/address/$addr': typeof ApiV1AddressAddrRoute
+  '/api/v1/richlist': typeof ApiV1RichlistRoute
+  '/api/v1/address/$addr': typeof ApiV1AddressAddrRouteWithChildren
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
   '/api/v1/mining/hashrate': typeof ApiV1MiningHashrateRoute
   '/api/v1/mining/miners': typeof ApiV1MiningMinersRoute
   '/api/v1/tx/$hash': typeof ApiV1TxHashRoute
   '/api/v1/blocks/': typeof ApiV1BlocksIndexRoute
   '/api/v1/mempool/': typeof ApiV1MempoolIndexRoute
+  '/api/v1/address/$addr/tokens': typeof ApiV1AddressAddrTokensRoute
   '/api/v1/block/$id/txs': typeof ApiV1BlockIdTxsRoute
   '/api/v1/blocks/tip/height': typeof ApiV1BlocksTipHeightRoute
 }
@@ -255,12 +282,14 @@ export interface FileRouteTypes {
     | '/mempool'
     | '/mining'
     | '/privacy'
+    | '/richlist'
     | '/terms'
     | '/address/$addr'
     | '/block/$hash'
     | '/tx/$txid'
     | '/mempool/'
     | '/api/v1/chain'
+    | '/api/v1/richlist'
     | '/api/v1/address/$addr'
     | '/api/v1/block/$id'
     | '/api/v1/mining/hashrate'
@@ -268,6 +297,7 @@ export interface FileRouteTypes {
     | '/api/v1/tx/$hash'
     | '/api/v1/blocks/'
     | '/api/v1/mempool/'
+    | '/api/v1/address/$addr/tokens'
     | '/api/v1/block/$id/txs'
     | '/api/v1/blocks/tip/height'
   fileRoutesByTo: FileRoutesByTo
@@ -281,12 +311,14 @@ export interface FileRouteTypes {
     | '/manifesto'
     | '/mining'
     | '/privacy'
+    | '/richlist'
     | '/terms'
     | '/address/$addr'
     | '/block/$hash'
     | '/tx/$txid'
     | '/mempool'
     | '/api/v1/chain'
+    | '/api/v1/richlist'
     | '/api/v1/address/$addr'
     | '/api/v1/block/$id'
     | '/api/v1/mining/hashrate'
@@ -294,6 +326,7 @@ export interface FileRouteTypes {
     | '/api/v1/tx/$hash'
     | '/api/v1/blocks'
     | '/api/v1/mempool'
+    | '/api/v1/address/$addr/tokens'
     | '/api/v1/block/$id/txs'
     | '/api/v1/blocks/tip/height'
   id:
@@ -308,12 +341,14 @@ export interface FileRouteTypes {
     | '/mempool'
     | '/mining'
     | '/privacy'
+    | '/richlist'
     | '/terms'
     | '/address/$addr'
     | '/block/$hash'
     | '/tx/$txid'
     | '/mempool/'
     | '/api/v1/chain'
+    | '/api/v1/richlist'
     | '/api/v1/address/$addr'
     | '/api/v1/block/$id'
     | '/api/v1/mining/hashrate'
@@ -321,6 +356,7 @@ export interface FileRouteTypes {
     | '/api/v1/tx/$hash'
     | '/api/v1/blocks/'
     | '/api/v1/mempool/'
+    | '/api/v1/address/$addr/tokens'
     | '/api/v1/block/$id/txs'
     | '/api/v1/blocks/tip/height'
   fileRoutesById: FileRoutesById
@@ -336,12 +372,14 @@ export interface RootRouteChildren {
   MempoolRoute: typeof MempoolRouteWithChildren
   MiningRoute: typeof MiningRoute
   PrivacyRoute: typeof PrivacyRoute
+  RichlistRoute: typeof RichlistRoute
   TermsRoute: typeof TermsRoute
   AddressAddrRoute: typeof AddressAddrRoute
   BlockHashRoute: typeof BlockHashRoute
   TxTxidRoute: typeof TxTxidRoute
   ApiV1ChainRoute: typeof ApiV1ChainRoute
-  ApiV1AddressAddrRoute: typeof ApiV1AddressAddrRoute
+  ApiV1RichlistRoute: typeof ApiV1RichlistRoute
+  ApiV1AddressAddrRoute: typeof ApiV1AddressAddrRouteWithChildren
   ApiV1BlockIdRoute: typeof ApiV1BlockIdRouteWithChildren
   ApiV1MiningHashrateRoute: typeof ApiV1MiningHashrateRoute
   ApiV1MiningMinersRoute: typeof ApiV1MiningMinersRoute
@@ -358,6 +396,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/richlist': {
+      id: '/richlist'
+      path: '/richlist'
+      fullPath: '/richlist'
+      preLoaderRoute: typeof RichlistRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -458,6 +503,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AddressAddrRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/richlist': {
+      id: '/api/v1/richlist'
+      path: '/api/v1/richlist'
+      fullPath: '/api/v1/richlist'
+      preLoaderRoute: typeof ApiV1RichlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/chain': {
       id: '/api/v1/chain'
       path: '/api/v1/chain'
@@ -528,6 +580,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1BlockIdTxsRouteImport
       parentRoute: typeof ApiV1BlockIdRoute
     }
+    '/api/v1/address/$addr/tokens': {
+      id: '/api/v1/address/$addr/tokens'
+      path: '/tokens'
+      fullPath: '/api/v1/address/$addr/tokens'
+      preLoaderRoute: typeof ApiV1AddressAddrTokensRouteImport
+      parentRoute: typeof ApiV1AddressAddrRoute
+    }
   }
 }
 
@@ -541,6 +600,17 @@ const MempoolRouteChildren: MempoolRouteChildren = {
 
 const MempoolRouteWithChildren =
   MempoolRoute._addFileChildren(MempoolRouteChildren)
+
+interface ApiV1AddressAddrRouteChildren {
+  ApiV1AddressAddrTokensRoute: typeof ApiV1AddressAddrTokensRoute
+}
+
+const ApiV1AddressAddrRouteChildren: ApiV1AddressAddrRouteChildren = {
+  ApiV1AddressAddrTokensRoute: ApiV1AddressAddrTokensRoute,
+}
+
+const ApiV1AddressAddrRouteWithChildren =
+  ApiV1AddressAddrRoute._addFileChildren(ApiV1AddressAddrRouteChildren)
 
 interface ApiV1BlockIdRouteChildren {
   ApiV1BlockIdTxsRoute: typeof ApiV1BlockIdTxsRoute
@@ -565,12 +635,14 @@ const rootRouteChildren: RootRouteChildren = {
   MempoolRoute: MempoolRouteWithChildren,
   MiningRoute: MiningRoute,
   PrivacyRoute: PrivacyRoute,
+  RichlistRoute: RichlistRoute,
   TermsRoute: TermsRoute,
   AddressAddrRoute: AddressAddrRoute,
   BlockHashRoute: BlockHashRoute,
   TxTxidRoute: TxTxidRoute,
   ApiV1ChainRoute: ApiV1ChainRoute,
-  ApiV1AddressAddrRoute: ApiV1AddressAddrRoute,
+  ApiV1RichlistRoute: ApiV1RichlistRoute,
+  ApiV1AddressAddrRoute: ApiV1AddressAddrRouteWithChildren,
   ApiV1BlockIdRoute: ApiV1BlockIdRouteWithChildren,
   ApiV1MiningHashrateRoute: ApiV1MiningHashrateRoute,
   ApiV1MiningMinersRoute: ApiV1MiningMinersRoute,
