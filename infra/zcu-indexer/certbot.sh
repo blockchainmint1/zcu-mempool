@@ -9,7 +9,7 @@
 set -euo pipefail
 
 STACK_DIR="${STACK_DIR:-/opt/zcu-indexer}"
-DOMAIN="${DOMAIN:-indexer-zcu.honest.money}"
+DOMAIN="${DOMAIN:-api.mempool.zerochill.com}"
 EMAIL="${EMAIL:-admin@honest.money}"
 
 say() { printf '\n\033[1;36m==> %s\033[0m\n' "$1"; }

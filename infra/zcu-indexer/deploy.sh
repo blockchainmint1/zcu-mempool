@@ -32,7 +32,7 @@ rsync -a --delete \
 cd "$STACK_DIR"
 
 say "Validating nginx config"
-if [ -f ./data/certbot/conf/live/indexer-zcu.honest.money/fullchain.pem ]; then
+if [ -f ./data/certbot/conf/live/api.mempool.zerochill.com/fullchain.pem ]; then
   # Test in a throwaway container so a bad config never takes down the live one.
   docker run --rm \
     -v "$STACK_DIR/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
