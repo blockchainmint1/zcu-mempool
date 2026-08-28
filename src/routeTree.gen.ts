@@ -27,6 +27,7 @@ import { Route as ApiV1ChainRouteImport } from './routes/api/v1/chain'
 import { Route as ApiV1BlocksIndexRouteImport } from './routes/api/v1/blocks.index'
 import { Route as ApiV1TxHashRouteImport } from './routes/api/v1/tx.$hash'
 import { Route as ApiV1BlockIdRouteImport } from './routes/api/v1/block.$id'
+import { Route as ApiV1AddressAddrRouteImport } from './routes/api/v1/address.$addr'
 import { Route as ApiV1BlocksTipHeightRouteImport } from './routes/api/v1/blocks.tip.height'
 import { Route as ApiV1BlockIdTxsRouteImport } from './routes/api/v1/block.$id.txs'
 
@@ -120,6 +121,11 @@ const ApiV1BlockIdRoute = ApiV1BlockIdRouteImport.update({
   path: '/api/v1/block/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1AddressAddrRoute = ApiV1AddressAddrRouteImport.update({
+  id: '/api/v1/address/$addr',
+  path: '/api/v1/address/$addr',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1BlocksTipHeightRoute = ApiV1BlocksTipHeightRouteImport.update({
   id: '/api/v1/blocks/tip/height',
   path: '/api/v1/blocks/tip/height',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/mempool/': typeof MempoolIndexRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
   '/mempool/block/$index': typeof MempoolBlockIndexRoute
+  '/api/v1/address/$addr': typeof ApiV1AddressAddrRoute
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
   '/api/v1/tx/$hash': typeof ApiV1TxHashRoute
   '/api/v1/blocks/': typeof ApiV1BlocksIndexRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/mempool': typeof MempoolIndexRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
   '/mempool/block/$index': typeof MempoolBlockIndexRoute
+  '/api/v1/address/$addr': typeof ApiV1AddressAddrRoute
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
   '/api/v1/tx/$hash': typeof ApiV1TxHashRoute
   '/api/v1/blocks': typeof ApiV1BlocksIndexRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/mempool/': typeof MempoolIndexRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
   '/mempool/block/$index': typeof MempoolBlockIndexRoute
+  '/api/v1/address/$addr': typeof ApiV1AddressAddrRoute
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
   '/api/v1/tx/$hash': typeof ApiV1TxHashRoute
   '/api/v1/blocks/': typeof ApiV1BlocksIndexRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/mempool/'
     | '/api/v1/chain'
     | '/mempool/block/$index'
+    | '/api/v1/address/$addr'
     | '/api/v1/block/$id'
     | '/api/v1/tx/$hash'
     | '/api/v1/blocks/'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/mempool'
     | '/api/v1/chain'
     | '/mempool/block/$index'
+    | '/api/v1/address/$addr'
     | '/api/v1/block/$id'
     | '/api/v1/tx/$hash'
     | '/api/v1/blocks'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/mempool/'
     | '/api/v1/chain'
     | '/mempool/block/$index'
+    | '/api/v1/address/$addr'
     | '/api/v1/block/$id'
     | '/api/v1/tx/$hash'
     | '/api/v1/blocks/'
@@ -279,6 +291,7 @@ export interface RootRouteChildren {
   BlockHashRoute: typeof BlockHashRoute
   TxTxidRoute: typeof TxTxidRoute
   ApiV1ChainRoute: typeof ApiV1ChainRoute
+  ApiV1AddressAddrRoute: typeof ApiV1AddressAddrRoute
   ApiV1BlockIdRoute: typeof ApiV1BlockIdRouteWithChildren
   ApiV1TxHashRoute: typeof ApiV1TxHashRoute
   ApiV1BlocksIndexRoute: typeof ApiV1BlocksIndexRoute
@@ -413,6 +426,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1BlockIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/address/$addr': {
+      id: '/api/v1/address/$addr'
+      path: '/api/v1/address/$addr'
+      fullPath: '/api/v1/address/$addr'
+      preLoaderRoute: typeof ApiV1AddressAddrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/blocks/tip/height': {
       id: '/api/v1/blocks/tip/height'
       path: '/api/v1/blocks/tip/height'
@@ -469,6 +489,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlockHashRoute: BlockHashRoute,
   TxTxidRoute: TxTxidRoute,
   ApiV1ChainRoute: ApiV1ChainRoute,
+  ApiV1AddressAddrRoute: ApiV1AddressAddrRoute,
   ApiV1BlockIdRoute: ApiV1BlockIdRouteWithChildren,
   ApiV1TxHashRoute: ApiV1TxHashRoute,
   ApiV1BlocksIndexRoute: ApiV1BlocksIndexRoute,
