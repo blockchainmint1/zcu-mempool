@@ -145,8 +145,7 @@ function BlocksPage() {
       </div>
 
       <p className="text-[11px] text-muted-foreground font-mono">
-        Hashes shown short; hover a miner to see the full address.{" "}
-        <span className="text-foreground">{shortHash("0x", 2, 0)}</span>
+        Hover a miner address to see it in full.
       </p>
     </div>
   );
