@@ -9,8 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MiningRouteImport } from './routes/mining'
 import { Route as MempoolRouteImport } from './routes/mempool'
+import { Route as ManifestoRouteImport } from './routes/manifesto'
 import { Route as GraphsRouteImport } from './routes/graphs'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as BlocksRouteImport } from './routes/blocks'
@@ -32,6 +35,16 @@ import { Route as ApiV1AddressAddrRouteImport } from './routes/api/v1/address.$a
 import { Route as ApiV1BlocksTipHeightRouteImport } from './routes/api/v1/blocks.tip.height'
 import { Route as ApiV1BlockIdTxsRouteImport } from './routes/api/v1/block.$id.txs'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MiningRoute = MiningRouteImport.update({
   id: '/mining',
   path: '/mining',
@@ -40,6 +53,11 @@ const MiningRoute = MiningRouteImport.update({
 const MempoolRoute = MempoolRouteImport.update({
   id: '/mempool',
   path: '/mempool',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManifestoRoute = ManifestoRouteImport.update({
+  id: '/manifesto',
+  path: '/manifesto',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GraphsRoute = GraphsRouteImport.update({
@@ -150,8 +168,11 @@ export interface FileRoutesByFullPath {
   '/blocks': typeof BlocksRoute
   '/docs': typeof DocsRoute
   '/graphs': typeof GraphsRoute
+  '/manifesto': typeof ManifestoRoute
   '/mempool': typeof MempoolRouteWithChildren
   '/mining': typeof MiningRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
   '/tx/$txid': typeof TxTxidRoute
@@ -174,7 +195,10 @@ export interface FileRoutesByTo {
   '/blocks': typeof BlocksRoute
   '/docs': typeof DocsRoute
   '/graphs': typeof GraphsRoute
+  '/manifesto': typeof ManifestoRoute
   '/mining': typeof MiningRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
   '/tx/$txid': typeof TxTxidRoute
@@ -198,8 +222,11 @@ export interface FileRoutesById {
   '/blocks': typeof BlocksRoute
   '/docs': typeof DocsRoute
   '/graphs': typeof GraphsRoute
+  '/manifesto': typeof ManifestoRoute
   '/mempool': typeof MempoolRouteWithChildren
   '/mining': typeof MiningRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
   '/tx/$txid': typeof TxTxidRoute
@@ -224,8 +251,11 @@ export interface FileRouteTypes {
     | '/blocks'
     | '/docs'
     | '/graphs'
+    | '/manifesto'
     | '/mempool'
     | '/mining'
+    | '/privacy'
+    | '/terms'
     | '/address/$addr'
     | '/block/$hash'
     | '/tx/$txid'
@@ -248,7 +278,10 @@ export interface FileRouteTypes {
     | '/blocks'
     | '/docs'
     | '/graphs'
+    | '/manifesto'
     | '/mining'
+    | '/privacy'
+    | '/terms'
     | '/address/$addr'
     | '/block/$hash'
     | '/tx/$txid'
@@ -271,8 +304,11 @@ export interface FileRouteTypes {
     | '/blocks'
     | '/docs'
     | '/graphs'
+    | '/manifesto'
     | '/mempool'
     | '/mining'
+    | '/privacy'
+    | '/terms'
     | '/address/$addr'
     | '/block/$hash'
     | '/tx/$txid'
@@ -296,8 +332,11 @@ export interface RootRouteChildren {
   BlocksRoute: typeof BlocksRoute
   DocsRoute: typeof DocsRoute
   GraphsRoute: typeof GraphsRoute
+  ManifestoRoute: typeof ManifestoRoute
   MempoolRoute: typeof MempoolRouteWithChildren
   MiningRoute: typeof MiningRoute
+  PrivacyRoute: typeof PrivacyRoute
+  TermsRoute: typeof TermsRoute
   AddressAddrRoute: typeof AddressAddrRoute
   BlockHashRoute: typeof BlockHashRoute
   TxTxidRoute: typeof TxTxidRoute
@@ -314,6 +353,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mining': {
       id: '/mining'
       path: '/mining'
@@ -326,6 +379,13 @@ declare module '@tanstack/react-router' {
       path: '/mempool'
       fullPath: '/mempool'
       preLoaderRoute: typeof MempoolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manifesto': {
+      id: '/manifesto'
+      path: '/manifesto'
+      fullPath: '/manifesto'
+      preLoaderRoute: typeof ManifestoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/graphs': {
@@ -501,8 +561,11 @@ const rootRouteChildren: RootRouteChildren = {
   BlocksRoute: BlocksRoute,
   DocsRoute: DocsRoute,
   GraphsRoute: GraphsRoute,
+  ManifestoRoute: ManifestoRoute,
   MempoolRoute: MempoolRouteWithChildren,
   MiningRoute: MiningRoute,
+  PrivacyRoute: PrivacyRoute,
+  TermsRoute: TermsRoute,
   AddressAddrRoute: AddressAddrRoute,
   BlockHashRoute: BlockHashRoute,
   TxTxidRoute: TxTxidRoute,

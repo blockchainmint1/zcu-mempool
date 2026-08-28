@@ -10,7 +10,6 @@ import {
 
 import appCss from "../styles.css?url";
 import { SearchBar } from "@/components/explorer/SearchBar";
-import { PriceTicker } from "@/components/explorer/PriceTicker";
 
 function NotFoundComponent() {
   return (
@@ -19,7 +18,7 @@ function NotFoundComponent() {
         <h1 className="font-display text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">Off the chain</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The block, transaction, or address you're looking for doesn't exist on TXC.
+          The block, transaction, or address you're looking for doesn't exist on the Zero Chill Units chain.
         </p>
         <div className="mt-6 flex gap-2 justify-center">
           <Link
@@ -70,17 +69,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "TXC Mempool — TEXITcoin Block Explorer" },
-      { name: "description", content: "Real-time TEXITcoin (TXC) block explorer, mempool visualization, fee estimator, Omni-Layer token decoder, and mining stats." },
-      { name: "author", content: "TEXITcoin" },
-      { property: "og:title", content: "TXC Mempool — TEXITcoin Block Explorer" },
-      { property: "og:description", content: "Real-time TEXITcoin (TXC) block explorer, mempool visualization, fee estimator, Omni-Layer token decoder, and mining stats." },
+      { title: "ZCU Explorer — Zero Chill Units Block Explorer" },
+      { name: "description", content: "Real-time Zero Chill Units (ZCU) block explorer: blocks, transactions, accounts, txpool and Scrypt merged-mining stats." },
+      { name: "author", content: "Zero Chill Units" },
+      { property: "og:title", content: "ZCU Explorer — Zero Chill Units Block Explorer" },
+      { property: "og:description", content: "Real-time Zero Chill Units (ZCU) block explorer: blocks, transactions, accounts, txpool and Scrypt merged-mining stats." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "TXC Mempool — TEXITcoin Block Explorer" },
-      { name: "twitter:description", content: "Real-time TEXITcoin (TXC) block explorer, mempool visualization, fee estimator, Omni-Layer token decoder, and mining stats." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0e23c0e1-ae81-4e85-8c9c-5b9c9a47003f/id-preview-f9d7e95b--a356bfa6-5f63-4466-b99d-f11202767549.lovable.app-1779994450550.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0e23c0e1-ae81-4e85-8c9c-5b9c9a47003f/id-preview-f9d7e95b--a356bfa6-5f63-4466-b99d-f11202767549.lovable.app-1779994450550.png" },
+      { name: "twitter:title", content: "ZCU Explorer — Zero Chill Units Block Explorer" },
+      { name: "twitter:description", content: "Real-time Zero Chill Units (ZCU) block explorer: blocks, transactions, accounts, txpool and Scrypt merged-mining stats." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -115,20 +112,19 @@ function Header() {
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
         <Link to="/" className="flex items-center gap-2 flex-shrink-0">
           <div className="size-7 rounded-sm bg-primary flex items-center justify-center font-display font-bold text-primary-foreground shadow-glow-red">
-            T
+            Z
           </div>
           <div className="font-display tracking-wide text-base hidden sm:block">
-            TXC<span className="text-primary">.</span>MEMPOOL
+            ZCU<span className="text-primary">.</span>EXPLORER
           </div>
         </Link>
         <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
           {[
             { to: "/", label: "Dashboard" },
-            { to: "/mempool", label: "Mempool" },
+            { to: "/mempool", label: "Txpool" },
             { to: "/blocks", label: "Blocks" },
             { to: "/mining", label: "Mining" },
             { to: "/graphs", label: "Graphs" },
-            { to: "/richlist", label: "Richlist" },
             { to: "/docs", label: "API" },
             { to: "/about", label: "About" },
           ].map((l) => (
@@ -144,7 +140,6 @@ function Header() {
           ))}
         </nav>
         <div className="flex-1 flex justify-end items-center gap-2">
-          <PriceTicker />
           <SearchBar variant="header" />
         </div>
       </div>
@@ -157,43 +152,54 @@ function Footer() {
     <footer className="border-t border-border mt-16 surface/50">
       <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
         <div>
-          <div className="font-display tracking-wide mb-2">TXC.MEMPOOL</div>
+          <div className="font-display tracking-wide mb-2">ZCU.EXPLORER</div>
           <div className="text-xs text-muted-foreground">
-            Live block explorer for the TEXITcoin chain. Self-hosted node +
-            indexer + mempool backend — fully independent infrastructure.
+            Live block explorer for the Zero Chill Units chain. Reads a
+            self-hosted geth node over JSON-RPC — independent infrastructure,
+            no third-party indexer required.
           </div>
         </div>
         <div>
           <div className="font-display text-xs uppercase mb-2 text-muted-foreground">Explore</div>
           <ul className="space-y-1">
             <li><Link to="/" className="hover:text-primary">Dashboard</Link></li>
-            <li><Link to="/mempool" className="hover:text-primary">Mempool</Link></li>
+            <li><Link to="/mempool" className="hover:text-primary">Txpool</Link></li>
             <li><Link to="/blocks" className="hover:text-primary">Blocks</Link></li>
             <li><Link to="/mining" className="hover:text-primary">Mining</Link></li>
             <li><Link to="/graphs" className="hover:text-primary">Graphs</Link></li>
-            <li><Link to="/richlist" className="hover:text-primary">Richlist</Link></li>
+            <li><Link to="/docs" className="hover:text-primary">API</Link></li>
           </ul>
         </div>
         <div>
           <div className="font-display text-xs uppercase mb-2 text-muted-foreground">Ecosystem</div>
           <ul className="space-y-1">
-            <li><a href="https://texitcoin.org" className="hover:text-primary" target="_blank" rel="noreferrer">texitcoin.org</a></li>
-            <li><a href="https://honest.money" className="hover:text-primary" target="_blank" rel="noreferrer">honest.money</a></li>
-            <li><a href="https://cryptopop.asia/api" className="hover:text-primary" target="_blank" rel="noreferrer">L2 docs (POP)</a></li>
-            <li><a href="https://imaginenation.com/api" className="hover:text-primary" target="_blank" rel="noreferrer">ImagineNation API</a></li>
+            <li>
+              <a href="https://honest.money" className="hover:text-primary" target="_blank" rel="noreferrer">
+                Part of the honest.money ecosystem
+              </a>
+            </li>
+            <li><a href="https://zerochill.com/build" className="hover:text-primary" target="_blank" rel="noreferrer">Run a node (zerochill.com/build)</a></li>
+            <li><Link to="/manifesto" className="hover:text-primary">Manifesto</Link></li>
+            <li><Link to="/terms" className="hover:text-primary">Terms</Link></li>
+            <li><Link to="/privacy" className="hover:text-primary">Privacy</Link></li>
           </ul>
         </div>
         <div>
           <div className="font-display text-xs uppercase mb-2 text-muted-foreground">Network</div>
           <ul className="space-y-1 font-mono text-xs">
-            <li>P2PKH prefix: <span className="text-foreground">0x42 (T…)</span></li>
-            <li>Block time: <span className="text-foreground">~3 min</span></li>
-            <li>L2: <span className="text-foreground">Omni Layer</span></li>
+            <li>Chain ID: <span className="text-foreground">90031273</span></li>
+            <li>Block time: <span className="text-foreground">variable</span></li>
+            <li>Consensus: <span className="text-foreground">Scrypt + AuxPoW</span></li>
+            <li>RPC: <span className="text-foreground">node-zcu.honest.money</span></li>
           </ul>
         </div>
       </div>
       <div className="border-t border-border py-3 text-center text-[11px] text-muted-foreground">
-        TEXITcoin · Mined in Texas, by individuals.
+        Zero Chill Units · Part of the{" "}
+        <a href="https://honest.money" target="_blank" rel="noreferrer" className="hover:text-primary underline">
+          honest.money
+        </a>{" "}
+        ecosystem.
       </div>
     </footer>
   );

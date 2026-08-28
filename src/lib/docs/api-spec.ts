@@ -1,5 +1,5 @@
 export interface Endpoint {
-  method: "GET" | "WS";
+  method: "GET" | "RPC";
   path: string;
   summary: string;
   example?: string; // example JSON response (string, may be truncated)
@@ -15,105 +15,150 @@ export interface EndpointGroup {
 export const REST_GROUPS: EndpointGroup[] = [
   {
     id: "chain",
-    title: "Chain tip & blocks",
-    description: "Current chain tip and block summaries.",
+    title: "Chain & blocks",
+    description: "Chain tip, block summaries and block transaction lists.",
     endpoints: [
-      { method: "GET", path: "/api/v1/blocks/tip/height", summary: "Latest block height (plain text).", example: `312188` },
-      { method: "GET", path: "/api/v1/blocks/tip/hash", summary: "Hash of the latest block." },
-      { method: "GET", path: "/api/v1/blocks", summary: "Last 10 blocks (most recent first)." },
-      { method: "GET", path: "/api/v1/blocks/:startHeight", summary: "10 blocks starting at the given height (descending)." },
-      { method: "GET", path: "/api/v1/block/:hash", summary: "Block details by hash." },
-      { method: "GET", path: "/api/v1/block-height/:height", summary: "Block hash for the given height." },
-      { method: "GET", path: "/api/v1/block/:hash/txids", summary: "All txids in a block." },
+      {
+        method: "GET",
+        path: "/api/v1/chain",
+        summary: "Chain tip, suggested gas price, peer count and sync state.",
+        example: `{\n  "chainId": 90031273,\n  "tipHeight": 26347,\n  "tipHash": "0x…",\n  "tipTimestamp": 1782205885,\n  "gasPriceWei": "1000000000",\n  "peerCount": 6,\n  "syncing": false\n}`,
+      },
+      {
+        method: "GET",
+        path: "/api/v1/blocks/tip/height",
+        summary: "Latest block height (plain text).",
+        example: `26347`,
+      },
+      {
+        method: "GET",
+        path: "/api/v1/blocks?count=25&before=26000",
+        summary:
+          "Block summaries, newest first. `count` max 100. `before` walks backwards from a height for pagination.",
+      },
+      {
+        method: "GET",
+        path: "/api/v1/block/:id",
+        summary: "Block by decimal height or 0x block hash. `latest` also works.",
+        example: `{\n  "number": 26347,\n  "hash": "0x…",\n  "miner": "0x…",\n  "difficulty": "1032144",\n  "gasUsed": 21000,\n  "gasLimit": 8000000,\n  "baseFeePerGas": null,\n  "txCount": 1\n}`,
+      },
+      {
+        method: "GET",
+        path: "/api/v1/block/:id/txs",
+        summary:
+          "Block plus every transaction in it, with receipts already merged in (status, gasUsed, feeWei, logs).",
+      },
     ],
   },
   {
     id: "tx",
     title: "Transactions",
-    description: "Transaction lookup, outspends, raw hex.",
+    description: "Transaction lookup with receipt and event logs merged.",
     endpoints: [
-      { method: "GET", path: "/api/v1/tx/:txid", summary: "Full transaction object (inputs, outputs, fee, status)." },
-      { method: "GET", path: "/api/v1/tx/:txid/status", summary: "Confirmation status." },
-      { method: "GET", path: "/api/v1/tx/:txid/hex", summary: "Raw transaction hex." },
-      { method: "GET", path: "/api/v1/tx/:txid/outspends", summary: "Array of {spent, txid?, vin?} per output." },
+      {
+        method: "GET",
+        path: "/api/v1/tx/:hash",
+        summary:
+          "Full transaction: from, to, value, gas, effective fee, status, methodId, contractAddress and logs. Pending transactions return with `status: null`.",
+        example: `{\n  "hash": "0x…",\n  "blockNumber": 26340,\n  "from": "0x…",\n  "to": "0x…",\n  "value": "1000000000000000000",\n  "gasPrice": "1000000000",\n  "gasUsed": 21000,\n  "feeWei": "21000000000000",\n  "status": 1,\n  "logs": []\n}`,
+      },
     ],
   },
   {
     id: "address",
-    title: "Addresses",
-    description: "Balance, UTXOs, transaction history.",
+    title: "Accounts",
+    description: "Live account state read straight from the node.",
     endpoints: [
-      { method: "GET", path: "/api/v1/address/:addr", summary: "Address summary: chain_stats + mempool_stats." },
-      { method: "GET", path: "/api/v1/address/:addr/utxo", summary: "Unspent outputs at this address." },
-      { method: "GET", path: "/api/v1/address/:addr/txs", summary: "Most recent transactions involving this address." },
-      { method: "GET", path: "/api/v1/address/:addr/balance-history?bucket=day&limit=400",
-        summary: "Balance time-series for the address, computed from every credit/debit in our indexer. `bucket` is `day` (default) or `hour`. Balances in satoshis. Edge-cached 30s.",
-        example: `{\n  "address": "TjfL5...",\n  "bucket": "day",\n  "currentBalance": 133126424319495,\n  "indexedTip": 312529,\n  "points": 142,\n  "history": [\n    { "t": 1768435200, "balance": 100000000000, "delta": 100000000000 },\n    { "t": 1768521600, "balance": 102500000000, "delta": 2500000000 }\n  ]\n}` },
-      { method: "GET", path: "/api/v1/richlist?limit=100", summary: "Top N addresses by confirmed unspent balance (max 500). Balances in satoshis. Edge-cached 60s.",
-        example: `{\n  "computed_at": 1781494149,\n  "indexed_tip": 312529,\n  "limit": 5,\n  "total_entries": 5,\n  "entries": [\n    { "address": "txc1q...", "balance": 300765299989780, "utxo_count": 1 }\n  ]\n}` },
+      {
+        method: "GET",
+        path: "/api/v1/address/:addr",
+        summary:
+          "Balance in wei, outbound transaction count (nonce), and whether the address holds contract code.",
+        example: `{\n  "address": "0x…",\n  "balance": "412500000000000000000",\n  "nonce": 17,\n  "isContract": false,\n  "codeSize": 0\n}`,
+      },
     ],
   },
   {
     id: "mempool",
-    title: "Mempool & fees",
-    description: "Live mempool snapshot and fee estimates.",
+    title: "Txpool",
+    description: "Pending and queued transactions waiting to be mined.",
     endpoints: [
-      { method: "GET", path: "/api/v1/mempool", summary: "Mempool size, vsize, fee histogram.",
-        example: `{\n  "count": 24,\n  "vsize": 5821,\n  "total_fee": 5821,\n  "fee_histogram": [[1,5821]]\n}` },
-      { method: "GET", path: "/api/v1/mempool/recent", summary: "Most recent unconfirmed transactions." },
-      { method: "GET", path: "/api/v1/fees/recommended", summary: "Fastest / 30-min / 1-hour / economy / minimum fee rates.",
-        example: `{\n  "fastestFee": 1,\n  "halfHourFee": 1,\n  "hourFee": 1,\n  "economyFee": 1,\n  "minimumFee": 1\n}` },
-      { method: "GET", path: "/api/v1/fees/mempool-blocks", summary: "Projected next blocks by fee bucket." },
+      {
+        method: "GET",
+        path: "/api/v1/mempool",
+        summary:
+          "Txpool counts, a capped list of pending transactions, and a gas-price histogram.",
+        example: `{\n  "pending": 3,\n  "queued": 0,\n  "txs": [ { "hash": "0x…", "gasPrice": "1000000000", "state": "pending" } ],\n  "buckets": [ { "minGwei": 1, "maxGwei": 1, "count": 3, "gasTotal": 63000 } ]\n}`,
+      },
     ],
   },
   {
     id: "mining",
     title: "Mining",
-    description: "Pool rankings, difficulty adjustment.",
+    description: "Scrypt difficulty, estimated hashrate and coinbase distribution.",
     endpoints: [
-      { method: "GET", path: "/api/v1/mining/pools/24h", summary: "Pool block share over the last 24 hours." },
-      { method: "GET", path: "/api/v1/mining/pools/1w",
-        summary: "Pool block share over a window (24h | 1w | 1m). Computed locally by attributing each sampled block to the coinbase payout address that received its reward, so it works without upstream pool indexing. `blockCount` is the number of blocks actually inspected; `windowBlockCount` is the estimated total in the window. Edge-cached 10 min.",
-        example: `{\n  "window": "1w",\n  "pools": [\n    {\n      "poolId": 1,\n      "name": "honest.money",\n      "slug": "honest-money",\n      "link": "https://pool.honest.money",\n      "address": "TjfL5Kq58h8VaJMWRkHi2T5wxA5eV6HVwB",\n      "blockCount": 36,\n      "rank": 1,\n      "emptyBlocks": 26\n    }\n  ],\n  "blockCount": 36,\n  "windowBlockCount": 3360,\n  "sampled": true,\n  "lastEstimatedHashrate": 15517223062374.5,\n  "tipHeight": 332595\n}` },
-      { method: "GET", path: "/api/v1/mining/pools/1m", summary: "Pool block share over the last 30 days." },
-
-      { method: "GET", path: "/api/v1/difficulty-adjustment", summary: "Progress and ETA to the next retarget." },
-      { method: "GET", path: "/api/v1/mining/hashrate?window=1w",
-        summary: "Network hashrate + difficulty time series. window = 1d | 1w | 1m | 3m | 1y. `currentHashrate` is read live from the TEXITcoin pool (steadiest figure available); if the pool is unreachable it falls back to the chain-derived estimate and `source` becomes \"chain\". `computedHashrate` is always the chain-derived value (difficulty × 2³² ÷ avg_block_time) so you can compare. History is always chain-derived. Edge-cached.",
-        example: `{\n  "window": "1w",\n  "tipHeight": 332173,\n  "computedAt": 1782205885,\n  "currentHashrate": 18916792441409.37,\n  "currentDifficulty": 770771.568,\n  "source": "pool",\n  "computedHashrate": 20563960911777.14,\n  "poolWorkers": 0,\n  "blocks24h": 438,\n  "blockReward": 254,\n  "hashrates": [\n    { "timestamp": 1781601085, "avgHashrate": 18910223104.1 }\n  ],\n  "difficulty": [\n    { "timestamp": 1781601085, "difficulty": 268914.7, "height": 313035 }\n  ],\n  "formula": "hashrate = difficulty * 2^32 / avg_block_time_sec",\n  "sampleSizePerPoint": 15\n}` },
-    ],
-  },
-  {
-    id: "txc-extras",
-    title: "TXC extras",
-    description: "TEXITcoin-specific additions on top of the mempool API.",
-    endpoints: [
-      { method: "GET", path: "/api/v1/price", summary: "Live TXC price from CoinMarketCap (cached 60s).",
-        example: `{\n  "usd": 0.0961,\n  "change24h": 2.34,\n  "marketCap": 1200000,\n  "volume24h": 9421,\n  "updatedAt": "2026-06-14T10:30:00Z",\n  "source": "coinmarketcap"\n}` },
-      { method: "GET", path: "/api/v1/supply", summary: "Approximate circulating supply derived from the emission schedule.",
-        example: `{ "height": 312188, "circulating": 21300000, "max": 50000000 }` },
-      { method: "GET", path: "/api/v1/omni/tx/:txid", summary: "Decoded Omni-Layer payload (if the tx contains an Omni OP_RETURN)." },
+      {
+        method: "GET",
+        path: "/api/v1/mining/hashrate?sample=120",
+        summary:
+          "Estimated hashrate (difficulty ÷ mean block time) plus a per-block difficulty and block-time series over the sampled window.",
+        example: `{\n  "hashrate": 17203,\n  "difficulty": "1032144",\n  "avgBlockTimeSec": 60.0,\n  "sampleBlocks": 120,\n  "series": [ { "timestamp": 1782205885, "height": 26347, "difficulty": 1032144, "blockTimeSec": 59 } ]\n}`,
+      },
+      {
+        method: "GET",
+        path: "/api/v1/mining/miners?window=200",
+        summary:
+          "Blocks per coinbase address over the last N blocks, with each miner's share of the window.",
+      },
     ],
   },
 ];
 
 export const WS_GROUPS: EndpointGroup[] = [
   {
-    id: "ws-connect",
-    title: "Connecting",
-    description: "Connect to the mempool-style WebSocket. Same subprotocol as mempool.space. Base URL: https://api.mempool.texitcoin.org",
+    id: "rpc-connect",
+    title: "Direct JSON-RPC",
+    description:
+      "This explorer is a thin layer over a go-ethereum node. Anything not exposed above can be read straight from the public RPC endpoint at https://node-zcu.honest.money using standard Ethereum JSON-RPC. Add the chain to any EVM wallet with chain ID 90031273.",
     endpoints: [
-      { method: "WS", path: "wss://api.mempool.texitcoin.org/api/v1/ws", summary: "Open a WebSocket connection." },
+      {
+        method: "RPC",
+        path: `{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]}`,
+        summary: "Current block height as a hex quantity.",
+      },
+      {
+        method: "RPC",
+        path: `{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["0x…","latest"]}`,
+        summary: "Account balance in wei.",
+      },
+      {
+        method: "RPC",
+        path: `{"jsonrpc":"2.0","id":1,"method":"eth_getLogs","params":[{"fromBlock":"0x0","toBlock":"latest","address":"0x…"}]}`,
+        summary: "Contract event logs — the basis for token indexing.",
+      },
+      {
+        method: "RPC",
+        path: `{"jsonrpc":"2.0","id":1,"method":"eth_sendRawTransaction","params":["0x…"]}`,
+        summary: "Broadcast a signed transaction.",
+      },
     ],
   },
   {
-    id: "ws-subscribe",
-    title: "Subscriptions",
-    description: "Send a JSON message to subscribe to live updates.",
+    id: "rpc-namespaces",
+    title: "Available namespaces",
+    description:
+      "The public node exposes eth, net, web3, debug, txpool and scrypt. `scrypt_*` covers the AuxPoW merged-mining surface used by miners.",
     endpoints: [
-      { method: "WS", path: `{"action":"want","data":["blocks","mempool-blocks","stats"]}`, summary: "Subscribe to new blocks, projected mempool blocks, and global stats." },
-      { method: "WS", path: `{"track-address":"TjfL5Kq58h8VaJMWRkHi2T5wxA5eV6HVwB"}`, summary: "Subscribe to all transactions involving an address." },
-      { method: "WS", path: `{"track-tx":"<txid>"}`, summary: "Subscribe to confirmation status updates for a single tx." },
+      {
+        method: "RPC",
+        path: `{"jsonrpc":"2.0","id":1,"method":"txpool_status","params":[]}`,
+        summary: "Pending / queued counts straight from the node.",
+      },
+      {
+        method: "RPC",
+        path: `{"jsonrpc":"2.0","id":1,"method":"net_peerCount","params":[]}`,
+        summary: "Connected peer count.",
+      },
     ],
   },
 ];
