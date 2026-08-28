@@ -26,16 +26,19 @@ function DocsPage() {
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Developers</div>
         <h1 className="font-display text-3xl md:text-4xl font-semibold mt-1">Zero Chill Units API</h1>
         <p className="mt-2 text-sm text-muted-foreground max-w-3xl">
-          Free, open, no API key required. Drop-in compatible with{" "}
-          <a href="https://mempool.space/docs/api" target="_blank" rel="noreferrer" className="text-accent hover:underline">
-            mempool.space
-          </a>{" "}
-          patterns. The block explorer you see at{" "}
-          <a href="https://mempool.texitcoin.org" className="text-accent hover:underline">mempool.texitcoin.org</a>{" "}
-          is a frontend that reads from this API. Point your own client or wallet at{" "}
-          <span className="font-mono text-foreground">{ORIGIN}</span> and you're done.
-          Rate-limited per IP at the edge; please cache aggressively. Need higher limits or want to mirror the data?{" "}
-          <a href="mailto:hello@texitcoin.org" className="text-accent hover:underline">Get in touch</a>.
+          Free, open, no API key required. This explorer reads a Zero Chill
+          Units node over JSON-RPC and re-serves the results as plain JSON
+          under <span className="font-mono text-foreground">/api/v1</span>,
+          CORS-open so you can call it straight from a browser. Anything not
+          covered here is available as raw Ethereum JSON-RPC at{" "}
+          <a href="https://node-zcu.honest.money" target="_blank" rel="noreferrer" className="text-accent hover:underline">
+            node-zcu.honest.money
+          </a>
+          . Please cache aggressively. Node setup and genesis live at{" "}
+          <a href="https://zerochill.com/build" target="_blank" rel="noreferrer" className="text-accent hover:underline">
+            zerochill.com/build
+          </a>
+          .
         </p>
         <div className="mt-4 inline-flex rounded-md border border-border surface-2 p-1 text-xs">
           <button
