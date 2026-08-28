@@ -22,7 +22,6 @@ import { Route as MempoolIndexRouteImport } from './routes/mempool.index'
 import { Route as TxTxidRouteImport } from './routes/tx.$txid'
 import { Route as BlockHashRouteImport } from './routes/block.$hash'
 import { Route as AddressAddrRouteImport } from './routes/address.$addr'
-import { Route as MempoolBlockIndexRouteImport } from './routes/mempool.block.$index'
 import { Route as ApiV1ChainRouteImport } from './routes/api/v1/chain'
 import { Route as ApiV1MempoolIndexRouteImport } from './routes/api/v1/mempool.index'
 import { Route as ApiV1BlocksIndexRouteImport } from './routes/api/v1/blocks.index'
@@ -99,11 +98,6 @@ const AddressAddrRoute = AddressAddrRouteImport.update({
   path: '/address/$addr',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MempoolBlockIndexRoute = MempoolBlockIndexRouteImport.update({
-  id: '/block/$index',
-  path: '/block/$index',
-  getParentRoute: () => MempoolRoute,
-} as any)
 const ApiV1ChainRoute = ApiV1ChainRouteImport.update({
   id: '/api/v1/chain',
   path: '/api/v1/chain',
@@ -170,7 +164,6 @@ export interface FileRoutesByFullPath {
   '/tx/$txid': typeof TxTxidRoute
   '/mempool/': typeof MempoolIndexRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
-  '/mempool/block/$index': typeof MempoolBlockIndexRoute
   '/api/v1/address/$addr': typeof ApiV1AddressAddrRoute
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
   '/api/v1/mining/hashrate': typeof ApiV1MiningHashrateRoute
@@ -195,7 +188,6 @@ export interface FileRoutesByTo {
   '/tx/$txid': typeof TxTxidRoute
   '/mempool': typeof MempoolIndexRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
-  '/mempool/block/$index': typeof MempoolBlockIndexRoute
   '/api/v1/address/$addr': typeof ApiV1AddressAddrRoute
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
   '/api/v1/mining/hashrate': typeof ApiV1MiningHashrateRoute
@@ -222,7 +214,6 @@ export interface FileRoutesById {
   '/tx/$txid': typeof TxTxidRoute
   '/mempool/': typeof MempoolIndexRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
-  '/mempool/block/$index': typeof MempoolBlockIndexRoute
   '/api/v1/address/$addr': typeof ApiV1AddressAddrRoute
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
   '/api/v1/mining/hashrate': typeof ApiV1MiningHashrateRoute
@@ -250,7 +241,6 @@ export interface FileRouteTypes {
     | '/tx/$txid'
     | '/mempool/'
     | '/api/v1/chain'
-    | '/mempool/block/$index'
     | '/api/v1/address/$addr'
     | '/api/v1/block/$id'
     | '/api/v1/mining/hashrate'
@@ -275,7 +265,6 @@ export interface FileRouteTypes {
     | '/tx/$txid'
     | '/mempool'
     | '/api/v1/chain'
-    | '/mempool/block/$index'
     | '/api/v1/address/$addr'
     | '/api/v1/block/$id'
     | '/api/v1/mining/hashrate'
@@ -301,7 +290,6 @@ export interface FileRouteTypes {
     | '/tx/$txid'
     | '/mempool/'
     | '/api/v1/chain'
-    | '/mempool/block/$index'
     | '/api/v1/address/$addr'
     | '/api/v1/block/$id'
     | '/api/v1/mining/hashrate'
@@ -430,13 +418,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AddressAddrRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/mempool/block/$index': {
-      id: '/mempool/block/$index'
-      path: '/block/$index'
-      fullPath: '/mempool/block/$index'
-      preLoaderRoute: typeof MempoolBlockIndexRouteImport
-      parentRoute: typeof MempoolRoute
-    }
     '/api/v1/chain': {
       id: '/api/v1/chain'
       path: '/api/v1/chain'
@@ -512,12 +493,10 @@ declare module '@tanstack/react-router' {
 
 interface MempoolRouteChildren {
   MempoolIndexRoute: typeof MempoolIndexRoute
-  MempoolBlockIndexRoute: typeof MempoolBlockIndexRoute
 }
 
 const MempoolRouteChildren: MempoolRouteChildren = {
   MempoolIndexRoute: MempoolIndexRoute,
-  MempoolBlockIndexRoute: MempoolBlockIndexRoute,
 }
 
 const MempoolRouteWithChildren =
