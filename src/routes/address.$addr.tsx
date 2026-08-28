@@ -319,6 +319,8 @@ function AddressPage() {
         />
       </div>
 
+      {a?.isContract && <ContractPanel addr={addr} />}
+
       <section className="rounded-md surface-2 border border-border p-4 md:p-6 space-y-3">
         <div className="flex items-center gap-4 border-b border-border pb-3">
           <button
