@@ -24,6 +24,7 @@ import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MempoolIndexRouteImport } from './routes/mempool.index'
 import { Route as TxTxidRouteImport } from './routes/tx.$txid'
+import { Route as TokenAddrRouteImport } from './routes/token.$addr'
 import { Route as BlockHashRouteImport } from './routes/block.$hash'
 import { Route as AddressAddrRouteImport } from './routes/address.$addr'
 import { Route as ApiV1VerifyRouteImport } from './routes/api/v1/verify'
@@ -116,6 +117,11 @@ const MempoolIndexRoute = MempoolIndexRouteImport.update({
 const TxTxidRoute = TxTxidRouteImport.update({
   id: '/tx/$txid',
   path: '/tx/$txid',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TokenAddrRoute = TokenAddrRouteImport.update({
+  id: '/token/$addr',
+  path: '/token/$addr',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlockHashRoute = BlockHashRouteImport.update({
@@ -225,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/tokens': typeof TokensRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
+  '/token/$addr': typeof TokenAddrRoute
   '/tx/$txid': typeof TxTxidRoute
   '/mempool/': typeof MempoolIndexRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
@@ -259,6 +266,7 @@ export interface FileRoutesByTo {
   '/tokens': typeof TokensRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
+  '/token/$addr': typeof TokenAddrRoute
   '/tx/$txid': typeof TxTxidRoute
   '/mempool': typeof MempoolIndexRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
@@ -295,6 +303,7 @@ export interface FileRoutesById {
   '/tokens': typeof TokensRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
+  '/token/$addr': typeof TokenAddrRoute
   '/tx/$txid': typeof TxTxidRoute
   '/mempool/': typeof MempoolIndexRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
@@ -332,6 +341,7 @@ export interface FileRouteTypes {
     | '/tokens'
     | '/address/$addr'
     | '/block/$hash'
+    | '/token/$addr'
     | '/tx/$txid'
     | '/mempool/'
     | '/api/v1/chain'
@@ -366,6 +376,7 @@ export interface FileRouteTypes {
     | '/tokens'
     | '/address/$addr'
     | '/block/$hash'
+    | '/token/$addr'
     | '/tx/$txid'
     | '/mempool'
     | '/api/v1/chain'
@@ -401,6 +412,7 @@ export interface FileRouteTypes {
     | '/tokens'
     | '/address/$addr'
     | '/block/$hash'
+    | '/token/$addr'
     | '/tx/$txid'
     | '/mempool/'
     | '/api/v1/chain'
@@ -437,6 +449,7 @@ export interface RootRouteChildren {
   TokensRoute: typeof TokensRoute
   AddressAddrRoute: typeof AddressAddrRoute
   BlockHashRoute: typeof BlockHashRoute
+  TokenAddrRoute: typeof TokenAddrRoute
   TxTxidRoute: typeof TxTxidRoute
   ApiV1ChainRoute: typeof ApiV1ChainRoute
   ApiV1RichlistRoute: typeof ApiV1RichlistRoute
@@ -559,6 +572,13 @@ declare module '@tanstack/react-router' {
       path: '/tx/$txid'
       fullPath: '/tx/$txid'
       preLoaderRoute: typeof TxTxidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/token/$addr': {
+      id: '/token/$addr'
+      path: '/token/$addr'
+      fullPath: '/token/$addr'
+      preLoaderRoute: typeof TokenAddrRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/block/$hash': {
@@ -740,6 +760,7 @@ const rootRouteChildren: RootRouteChildren = {
   TokensRoute: TokensRoute,
   AddressAddrRoute: AddressAddrRoute,
   BlockHashRoute: BlockHashRoute,
+  TokenAddrRoute: TokenAddrRoute,
   TxTxidRoute: TxTxidRoute,
   ApiV1ChainRoute: ApiV1ChainRoute,
   ApiV1RichlistRoute: ApiV1RichlistRoute,
