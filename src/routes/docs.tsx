@@ -6,16 +6,16 @@ import { REST_GROUPS, WS_GROUPS, type EndpointGroup } from "@/lib/docs/api-spec"
 export const Route = createFileRoute("/docs")({
   head: () => ({
     meta: [
-      { title: "API Docs — TXC Mempool" },
-      { name: "description", content: "Public REST and WebSocket API for the TEXITcoin block explorer. Drop-in compatible with mempool.space patterns." },
-      { property: "og:title", content: "TXC Mempool — Public API" },
-      { property: "og:description", content: "REST + WebSocket endpoints for chain tip, blocks, transactions, addresses, mempool, fees, mining, and TXC-only extras (price, supply, Omni decoding)." },
+      { title: "API Docs — ZCU Explorer" },
+      { name: "description", content: "Public REST API and JSON-RPC access for the Zero Chill Units chain: blocks, transactions, accounts, txpool and mining stats." },
+      { property: "og:title", content: "ZCU Explorer — Public API" },
+      { property: "og:description", content: "REST endpoints and raw JSON-RPC for chain tip, blocks, transactions, accounts, txpool and mining." },
     ],
   }),
   component: DocsPage,
 });
 
-const ORIGIN = "https://api.mempool.texitcoin.org";
+const ORIGIN = "";
 
 function DocsPage() {
   const [tab, setTab] = useState<"rest" | "ws">("rest");
@@ -24,7 +24,7 @@ function DocsPage() {
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="mb-6">
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Developers</div>
-        <h1 className="font-display text-3xl md:text-4xl font-semibold mt-1">TXC Mempool API</h1>
+        <h1 className="font-display text-3xl md:text-4xl font-semibold mt-1">Zero Chill Units API</h1>
         <p className="mt-2 text-sm text-muted-foreground max-w-3xl">
           Free, open, no API key required. Drop-in compatible with{" "}
           <a href="https://mempool.space/docs/api" target="_blank" rel="noreferrer" className="text-accent hover:underline">
@@ -52,7 +52,7 @@ function DocsPage() {
               tab === "ws" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Radio className="size-3.5" /> WebSocket
+            <Radio className="size-3.5" /> JSON-RPC
           </button>
         </div>
       </div>
@@ -91,7 +91,7 @@ function GroupBlock({ group, kind }: { group: EndpointGroup; kind: "rest" | "ws"
 
 function EndpointRow({
   method, path, summary, example, kind,
-}: { method: "GET" | "WS"; path: string; summary: string; example?: string; kind: "rest" | "ws" }) {
+}: { method: "GET" | "RPC"; path: string; summary: string; example?: string; kind: "rest" | "ws" }) {
   const [copied, setCopied] = useState(false);
   const fullUrl = kind === "rest" ? `${ORIGIN}${path}` : path;
   const curl = kind === "rest"
