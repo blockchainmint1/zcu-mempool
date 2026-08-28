@@ -31,20 +31,27 @@ rsync -a --delete \
 
 cd "$STACK_DIR"
 
+say "Building images and starting postgres, indexer and api"
+docker compose up -d --build postgres indexer api
+
 say "Validating nginx config"
 if [ -f ./data/certbot/conf/live/api.mempool.zerochill.com/fullchain.pem ]; then
-  # Test in a throwaway container so a bad config never takes down the live one.
+  # Test in a throwaway container ON THE COMPOSE NETWORK so the `api`
+  # upstream hostname resolves exactly as it will for the real nginx.
+  NETWORK="$(docker compose ps -q api | xargs -r docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k}}{{end}}' | head -n1)"
+  [ -n "$NETWORK" ] || die "could not determine the compose network"
   docker run --rm \
+    --network "$NETWORK" \
     -v "$STACK_DIR/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
     -v "$STACK_DIR/data/certbot/conf:/etc/letsencrypt:ro" \
     --entrypoint nginx nginx:1.27-alpine -t \
-    || die "nginx config is invalid — nothing was changed"
+    || die "nginx config is invalid — nginx was not started"
 else
   echo "  (no certificate yet, skipping nginx test)"
 fi
 
-say "Building and starting"
-docker compose up -d --build
+say "Starting nginx"
+docker compose up -d --build nginx
 
 say "Waiting for the API to answer"
 for i in $(seq 1 30); do
