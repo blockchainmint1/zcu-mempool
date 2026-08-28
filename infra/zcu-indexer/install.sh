@@ -7,14 +7,14 @@
 #
 # Run as root:
 #   sudo -i
-#   curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/infra/zcu-indexer/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/blockchainmint1/zcu-mempool/main/infra/zcu-indexer/install.sh | bash
 #
 # Or, if the repo is already cloned:
 #   sudo bash /opt/zcu-mempool/infra/zcu-indexer/install.sh
 #
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-}"
+REPO_URL="${REPO_URL:-https://github.com/blockchainmint1/zcu-mempool.git}"
 REPO_DIR="${REPO_DIR:-/opt/zcu-mempool}"
 STACK_DIR="${STACK_DIR:-/opt/zcu-indexer}"
 DOMAIN="${DOMAIN:-indexer-zcu.honest.money}"
