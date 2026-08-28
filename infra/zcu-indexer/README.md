@@ -72,12 +72,11 @@ Clone the repo and run the installer:
 
 ```bash
 apt-get update && apt-get install -y git
-git clone https://github.com/OWNER/REPO.git /opt/zcu-mempool
+git clone https://github.com/blockchainmint1/zcu-mempool.git /opt/zcu-mempool
 bash /opt/zcu-mempool/infra/zcu-indexer/install.sh
 ```
 
-Replace `OWNER/REPO` with the actual repository. The installer prints an **API
-token** at the end — copy it, you need it in step 6.
+The installer prints an **API token** at the end — copy it, you need it in step 6.
 
 ### Step 4 — Get the TLS certificate
 
