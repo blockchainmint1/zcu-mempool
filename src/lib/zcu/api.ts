@@ -16,6 +16,9 @@ import type {
   ZcuMempool,
   ZcuMiner,
   ZcuTx,
+  ZcuTokenList,
+  ZcuTokenDetail,
+  ZcuContract,
 } from "./types";
 
 async function get<T>(path: string): Promise<T> {
@@ -56,6 +59,14 @@ export const zcu = {
   richlist: (limit = 100, offset = 0) =>
     get<ZcuRichlist>(`/richlist?limit=${limit}&offset=${offset}`),
 
+
+  // tokens + contracts (indexer-backed)
+  tokens: (page = 1, pageSize = 50) =>
+    get<ZcuTokenList>(`/tokens?page=${page}&pageSize=${pageSize}`),
+  token: (addr: string, page = 1, pageSize = 25) =>
+    get<ZcuTokenDetail>(`/token/${addr}?page=${page}&pageSize=${pageSize}`),
+  contract: (addr: string) => get<ZcuContract>(`/contract/${addr}`),
+  compilers: () => get<{ versions: string[] }>("/verify"),
 
   // mempool
   mempool: () => get<ZcuMempool>("/mempool"),
