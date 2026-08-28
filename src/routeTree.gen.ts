@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as TokensRouteImport } from './routes/tokens'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as RichlistRouteImport } from './routes/richlist'
@@ -44,6 +45,11 @@ import { Route as ApiV1BlocksTipHeightRouteImport } from './routes/api/v1/blocks
 import { Route as ApiV1BlockIdTxsRouteImport } from './routes/api/v1/block.$id.txs'
 import { Route as ApiV1AddressAddrTokensRouteImport } from './routes/api/v1/address.$addr.tokens'
 
+const VerifyRoute = VerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TokensRoute = TokensRouteImport.update({
   id: '/tokens',
   path: '/tokens',
@@ -229,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/richlist': typeof RichlistRoute
   '/terms': typeof TermsRoute
   '/tokens': typeof TokensRoute
+  '/verify': typeof VerifyRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
   '/token/$addr': typeof TokenAddrRoute
@@ -264,6 +271,7 @@ export interface FileRoutesByTo {
   '/richlist': typeof RichlistRoute
   '/terms': typeof TermsRoute
   '/tokens': typeof TokensRoute
+  '/verify': typeof VerifyRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
   '/token/$addr': typeof TokenAddrRoute
@@ -301,6 +309,7 @@ export interface FileRoutesById {
   '/richlist': typeof RichlistRoute
   '/terms': typeof TermsRoute
   '/tokens': typeof TokensRoute
+  '/verify': typeof VerifyRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
   '/token/$addr': typeof TokenAddrRoute
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/richlist'
     | '/terms'
     | '/tokens'
+    | '/verify'
     | '/address/$addr'
     | '/block/$hash'
     | '/token/$addr'
@@ -374,6 +384,7 @@ export interface FileRouteTypes {
     | '/richlist'
     | '/terms'
     | '/tokens'
+    | '/verify'
     | '/address/$addr'
     | '/block/$hash'
     | '/token/$addr'
@@ -410,6 +421,7 @@ export interface FileRouteTypes {
     | '/richlist'
     | '/terms'
     | '/tokens'
+    | '/verify'
     | '/address/$addr'
     | '/block/$hash'
     | '/token/$addr'
@@ -447,6 +459,7 @@ export interface RootRouteChildren {
   RichlistRoute: typeof RichlistRoute
   TermsRoute: typeof TermsRoute
   TokensRoute: typeof TokensRoute
+  VerifyRoute: typeof VerifyRoute
   AddressAddrRoute: typeof AddressAddrRoute
   BlockHashRoute: typeof BlockHashRoute
   TokenAddrRoute: typeof TokenAddrRoute
@@ -469,6 +482,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify': {
+      id: '/verify'
+      path: '/verify'
+      fullPath: '/verify'
+      preLoaderRoute: typeof VerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tokens': {
       id: '/tokens'
       path: '/tokens'
@@ -758,6 +778,7 @@ const rootRouteChildren: RootRouteChildren = {
   RichlistRoute: RichlistRoute,
   TermsRoute: TermsRoute,
   TokensRoute: TokensRoute,
+  VerifyRoute: VerifyRoute,
   AddressAddrRoute: AddressAddrRoute,
   BlockHashRoute: BlockHashRoute,
   TokenAddrRoute: TokenAddrRoute,
