@@ -1,25 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import { feeBucket, timeAgo } from "@/lib/txc/format";
-import type { BlockSummary } from "@/lib/txc/esplora";
-
-
-const FEE_VAR: Record<number, string> = {
-  1: "var(--color-fee-1)",
-  2: "var(--color-fee-2)",
-  3: "var(--color-fee-3)",
-  4: "var(--color-fee-4)",
-  5: "var(--color-fee-5)",
-  6: "var(--color-fee-6)",
-};
+import { timeAgo, formatGwei, gasColorVar, weiToGwei, formatZcu } from "@/lib/zcu/format";
+import type { ZcuBlock } from "@/lib/zcu/types";
 
 interface Props {
-  blocks: BlockSummary[];
+  blocks: ZcuBlock[];
   emptyLabel?: string;
 }
 
 /**
- * Confirmed (mined) blocks — flat rectangular tiles in the classic
- * mempool.space style. Newest block is on the left.
+ * Confirmed (mined) blocks — flat rectangular tiles, newest on the left.
+ * Tile colour tracks the block's base fee (or, absent one, its gas
+ * utilisation) so a congested chain visibly warms up.
  */
 export function ConfirmedBlocksStrip({ blocks, emptyLabel = "Waiting for blocks…" }: Props) {
   if (!blocks.length) {
@@ -29,19 +20,18 @@ export function ConfirmedBlocksStrip({ blocks, emptyLabel = "Waiting for blocks�
       </div>
     );
   }
-  // Newest first: sort by height desc so a new block pushes the strip to the right.
-  const items = [...blocks].sort((a, b) => b.height - a.height).slice(0, 6);
+  const items = [...blocks].sort((a, b) => b.number - a.number).slice(0, 6);
   return (
     <div className="flex items-end gap-3 overflow-x-auto pb-2">
       {items.map((b) => {
-        const median = b.extras?.medianFee ?? 0;
-        const color = FEE_VAR[feeBucket(median || 1)];
-        const fees = b.extras?.totalFees;
+        const util = b.gasLimit > 0 ? (b.gasUsed / b.gasLimit) * 100 : 0;
+        const gwei = b.baseFeePerGas ? weiToGwei(b.baseFeePerGas) : util / 10;
+        const color = gasColorVar(gwei);
         return (
           <Link
-            key={b.id}
+            key={b.hash}
             to="/block/$hash"
-            params={{ hash: b.id }}
+            params={{ hash: b.hash }}
             className="group flex flex-col items-center flex-shrink-0"
           >
             <div
@@ -53,19 +43,17 @@ export function ConfirmedBlocksStrip({ blocks, emptyLabel = "Waiting for blocks�
             >
               <div className="relative h-full flex flex-col items-center justify-center text-center px-2 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
                 <div className="font-display text-xl font-bold leading-none">
-                  {b.height.toLocaleString()}
+                  {b.number.toLocaleString()}
                 </div>
                 <div className="text-[9px] uppercase tracking-widest opacity-80 mt-1">height</div>
                 <div className="text-[10px] font-semibold mt-2 opacity-95">
-                  ~{median ? median.toFixed(1) : "—"} sat/vB
+                  {b.baseFeePerGas ? formatGwei(b.baseFeePerGas) : `${util.toFixed(0)}% gas`}
                 </div>
-                {fees != null && (
-                  <div className="text-[10px] mt-2 opacity-90">
-                    {(fees / 1e8).toFixed(4)} TXC
-                  </div>
+                {b.feesWei && b.feesWei !== "0" && (
+                  <div className="text-[10px] mt-2 opacity-90">{formatZcu(b.feesWei, " ZCU", 4)}</div>
                 )}
                 <div className="text-[9px] mt-1 opacity-75">
-                  {b.tx_count} tx · {Math.round(b.size / 1024)} kB
+                  {b.txCount} tx · {Math.round(b.size / 1024)} kB
                 </div>
               </div>
             </div>
@@ -75,7 +63,6 @@ export function ConfirmedBlocksStrip({ blocks, emptyLabel = "Waiting for blocks�
             >
               {timeAgo(b.timestamp)}
             </div>
-
           </Link>
         );
       })}
