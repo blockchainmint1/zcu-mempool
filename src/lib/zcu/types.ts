@@ -94,7 +94,8 @@ export interface ZcuMempool {
   queued: number;
   txs: ZcuPendingTx[];
   /** Gas-price histogram buckets, cheapest first. */
-  buckets: Array<{ minGwei: number; maxGwei: number; count: number; gasTotal: number }>;
+  /** maxGwei is null for the open-ended top bucket. */
+  buckets: Array<{ minGwei: number; maxGwei: number | null; count: number; gasTotal: number }>;
 }
 
 export interface ZcuChainInfo {
