@@ -63,6 +63,22 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
+# nginx resolves the `api` upstream once at startup. When the api container is
+# rebuilt it gets a new IP, so a long-running nginx keeps proxying to the dead
+# address and answers 502. Restart it after every deploy.
+say "Restarting nginx so it picks up the new API container"
+docker compose restart nginx
+for i in $(seq 1 30); do
+  code="$(curl -s -o /dev/null -w '%{http_code}' https://api.mempool.zerochill.com/health || true)"
+  if [ "$code" = "200" ]; then
+    echo "  public API healthy (https 200)"
+    break
+  fi
+  [ "$i" = 30 ] && die "public API still returning $code — check: docker compose logs nginx"
+  sleep 2
+done
+
+
 say "Status"
 docker compose ps
 
