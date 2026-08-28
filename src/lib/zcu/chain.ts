@@ -304,9 +304,11 @@ export async function getMempool(): Promise<ZcuMempool> {
   const status = statusRaw as { pending?: string; queued?: string } | null;
   const txs = flattenPool(contentRaw as RawPool | null);
 
+  // The top bucket is open-ended. Infinity does not survive JSON, so it is
+  // serialised as null and rendered as "100+".
   const buckets = BUCKET_EDGES.slice(0, -1).map((min, i) => ({
     minGwei: min,
-    maxGwei: BUCKET_EDGES[i + 1],
+    maxGwei: Number.isFinite(BUCKET_EDGES[i + 1]!) ? BUCKET_EDGES[i + 1]! : null,
     count: 0,
     gasTotal: 0,
   }));
