@@ -1,16 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { proxy } from "@/lib/api/backend";
-import { optionsHandler, errorResponse } from "@/lib/api/cors";
-
-const isAddr = (a: string) => /^[A-Za-z0-9]{14,120}$/.test(a);
+import { optionsHandler, jsonResponse, errorResponse } from "@/lib/api/cors";
+import { getAddress } from "@/lib/zcu/chain";
 
 export const Route = createFileRoute("/api/v1/address/$addr")({
   server: {
     handlers: {
       OPTIONS: optionsHandler,
       GET: async ({ params }) => {
-        if (!isAddr(params.addr)) return errorResponse("Invalid address", 400);
-        return proxy(`/v1/address/${params.addr}`, { cacheSeconds: 5 });
+        if (!/^0x[0-9a-fA-F]{40}$/.test(params.addr)) {
+          return errorResponse("Invalid address", 400);
+        }
+        try {
+          return jsonResponse(await getAddress(params.addr), {
+            headers: { "Cache-Control": "public, max-age=10, s-maxage=10" },
+          });
+        } catch (e) {
+          return errorResponse((e as Error).message, 502);
+        }
       },
     },
   },

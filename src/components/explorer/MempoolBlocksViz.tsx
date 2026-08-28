@@ -1,76 +1,68 @@
-import { Link } from "@tanstack/react-router";
-import { feeBucket } from "@/lib/txc/format";
-import type { MempoolBlock } from "@/lib/txc/esplora";
-
-const FEE_VAR: Record<number, string> = {
-  1: "var(--color-fee-1)",
-  2: "var(--color-fee-2)",
-  3: "var(--color-fee-3)",
-  4: "var(--color-fee-4)",
-  5: "var(--color-fee-5)",
-  6: "var(--color-fee-6)",
-};
+import { gasColorVar } from "@/lib/zcu/format";
+import type { ZcuMempool } from "@/lib/zcu/types";
 
 interface Props {
-  blocks: MempoolBlock[];
+  mempool: ZcuMempool | null;
 }
 
 /**
- * Mempool projected blocks — flat rectangular tiles in the classic
- * mempool.space style. Next block is leftmost; subsequent projected
- * blocks queue to the right.
+ * Mempool gas-price histogram. An EVM txpool has no "projected blocks" the
+ * way a vsize-limited UTXO mempool does, so instead of faking block
+ * templates we show what actually determines inclusion order: the spread of
+ * gas prices among pending transactions.
  */
-export function MempoolBlocksViz({ blocks }: Props) {
-  if (!blocks.length) {
+export function MempoolBlocksViz({ mempool }: Props) {
+  const buckets = mempool?.buckets ?? [];
+  const total = buckets.reduce((s, b) => s + b.count, 0);
+
+  if (!mempool || total === 0) {
     return (
       <div className="rounded-md surface-2 border border-border px-4 py-8 text-sm text-muted-foreground text-center">
-        Mempool is empty — next block has nothing waiting.
+        Txpool is empty — nothing is waiting to be mined.
       </div>
     );
   }
-  const items = blocks.slice(0, 6);
+
+  const max = Math.max(...buckets.map((b) => b.count));
   return (
     <div className="flex items-end gap-3 overflow-x-auto pb-2">
-      {items.map((b, i) => {
-        const color = FEE_VAR[feeBucket(b.medianFee || 1)];
-        const filledPct = Math.max(2, Math.min(100, (b.blockVSize / 1_000_000) * 100));
+      {buckets.map((b, i) => {
+        const mid = (b.minGwei + b.maxGwei) / 2;
+        const color = gasColorVar(mid);
+        // Fill height encodes how many txs sit in this price band.
+        const filledPct = Math.max(6, (b.count / max) * 100);
         return (
-          <Link
-            key={i}
-            to="/mempool/block/$index"
-            params={{ index: String(i) }}
-            className="group flex flex-col items-center flex-shrink-0"
-          >
+          <div key={i} className="group flex flex-col items-center flex-shrink-0">
             <div
-              className="relative w-32 h-32 rounded-md border border-border overflow-hidden transition-transform group-hover:-translate-y-1 group-hover:shadow-lg"
+              className="relative w-32 h-32 rounded-md border border-border overflow-hidden"
               style={{
                 background: `linear-gradient(180deg, color-mix(in oklab, ${color} 85%, transparent), color-mix(in oklab, ${color} 55%, transparent))`,
                 boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${color} 60%, transparent), 0 8px 20px -10px ${color}`,
               }}
             >
-              {/* fill indicator */}
               <div
-                className="absolute inset-x-0 bottom-0 bg-black/25"
+                className="absolute inset-x-0 top-0 bg-black/30"
                 style={{ height: `${100 - filledPct}%` }}
               />
               <div className="relative h-full flex flex-col items-center justify-center text-center px-2 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
                 <div className="font-display text-2xl font-bold leading-none">
-                  ~{b.medianFee.toFixed(1)}
+                  {b.count.toLocaleString()}
                 </div>
-                <div className="text-[9px] uppercase tracking-widest opacity-80 mt-1">sat/vB</div>
-                <div className="text-[10px] font-semibold mt-2 opacity-95">
-                  {b.feeRange?.length >= 2
-                    ? `${b.feeRange[0].toFixed(1)} – ${b.feeRange[b.feeRange.length - 1].toFixed(1)}`
-                    : ""}
+                <div className="text-[9px] uppercase tracking-widest opacity-80 mt-1">
+                  transactions
                 </div>
-                <div className="text-[10px] mt-2 opacity-90">{b.nTx.toLocaleString()} tx</div>
-                <div className="text-[9px] opacity-70">{(b.blockVSize / 1000).toFixed(0)} kvB</div>
+                <div className="text-[10px] font-semibold mt-3 opacity-95">
+                  {b.minGwei.toFixed(b.minGwei < 1 ? 3 : 1)} – {b.maxGwei.toFixed(b.maxGwei < 1 ? 3 : 1)} gwei
+                </div>
+                <div className="text-[9px] opacity-70 mt-1">
+                  {(b.gasTotal / 1e6).toFixed(2)}M gas
+                </div>
               </div>
             </div>
-            <div className="mt-2 text-[10px] font-mono text-muted-foreground group-hover:text-primary transition-colors">
-              {i === 0 ? "next block" : `in ~${(i + 1) * 3} min`}
+            <div className="mt-2 text-[10px] font-mono text-muted-foreground">
+              {((b.count / total) * 100).toFixed(0)}% of pool
             </div>
-          </Link>
+          </div>
         );
       })}
     </div>

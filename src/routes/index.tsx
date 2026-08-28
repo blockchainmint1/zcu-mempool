@@ -1,211 +1,178 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useMempoolFeed } from "@/lib/txc/ws";
-import { esplora } from "@/lib/txc/esplora";
-import { MempoolBlocksViz } from "@/components/explorer/MempoolBlocksViz";
-import { ConfirmedBlocksStrip } from "@/components/explorer/ConfirmedBlocksStrip";
-import { FeeGauge } from "@/components/explorer/FeeGauge";
-import { StatTile } from "@/components/explorer/StatTile";
+import { useZcuFeed } from "@/lib/zcu/feed";
+import { ZCU_NETWORK } from "@/lib/zcu/network";
+import {
+  formatGwei,
+  formatNumber,
+  formatHashrate,
+  formatDifficulty,
+  timeAgo,
+  formatGas,
+} from "@/lib/zcu/format";
 import { SearchBar } from "@/components/explorer/SearchBar";
-import { NetworkDifficultyChart } from "@/components/explorer/NetworkDifficultyChart";
-import { formatBytes, formatNumber, satsToTxc, shortHash, timeAgo } from "@/lib/txc/format";
-import { Activity, Clock, Zap } from "lucide-react";
+import { StatTile } from "@/components/explorer/StatTile";
+import { ConfirmedBlocksStrip } from "@/components/explorer/ConfirmedBlocksStrip";
+import { MempoolBlocksViz } from "@/components/explorer/MempoolBlocksViz";
+import { TxListRow } from "@/components/explorer/TxListRow";
+
+const TITLE = "ZCU Explorer — Zero Chill Units Block Explorer";
+const DESC =
+  "Live Zero Chill Units (ZCU) block explorer: blocks, transactions, txpool, gas prices, Scrypt merged-mining stats and accounts on chain 90031273.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "TXC Mempool — Live TEXITcoin Block Explorer" },
-      { name: "description", content: "Live TEXITcoin mempool, projected blocks, fee estimator, and recent blocks." },
-      { property: "og:title", content: "TXC Mempool — Live TEXITcoin Block Explorer" },
-      { property: "og:description", content: "Live TEXITcoin mempool, projected blocks, fee estimator, and recent blocks." },
+      { title: TITLE },
+      { name: "description", content: DESC },
+      { property: "og:title", content: TITLE },
+      { property: "og:description", content: DESC },
     ],
   }),
   component: Dashboard,
 });
 
 function Dashboard() {
-  const feed = useMempoolFeed();
-  const diff = useQuery({
-    queryKey: ["mempool", "difficulty"],
-    queryFn: () => esplora.difficultyAdjustment(),
-    refetchInterval: 60_000,
-    retry: 0,
-  });
+  const feed = useZcuFeed();
+  const { chain, blocks, mempool } = feed;
 
-  const dot =
-    feed.status === "live"
-      ? "bg-success"
-      : feed.status === "polling"
-      ? "bg-warning"
-      : "bg-muted-foreground";
+  const latest = blocks[0];
+  const avgBlockTime =
+    blocks.length > 1
+      ? (blocks[0]!.timestamp - blocks[blocks.length - 1]!.timestamp) / (blocks.length - 1)
+      : null;
+  const hashrate =
+    latest && avgBlockTime && avgBlockTime > 0
+      ? Number(latest.difficulty) / avgBlockTime
+      : null;
+
+  const pendingTxs = (mempool?.txs ?? []).slice(0, 8);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-      {/* Hero / search */}
-      <section className="rounded-xl surface border border-border p-6 md:p-10 shadow-card relative overflow-hidden">
-        <div className="relative">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
-            <span className={`size-2 rounded-full ${dot} animate-pulse-dot`} />
-            {feed.status === "live" && "Live · WebSocket"}
-            {feed.status === "polling" && "Live · polling 10s"}
-            {feed.status === "connecting" && "Connecting…"}
-            {feed.status === "offline" && "Offline"}
-            {feed.tipHeight != null && (
-              <span className="ml-2 font-mono text-foreground">
-                tip {formatNumber(feed.tipHeight)}
-              </span>
-            )}
-          </div>
-          <h1 className="font-display text-4xl md:text-5xl font-bold mt-2 text-balance">
-            TEXITcoin <span className="text-primary">mempool</span>, right now.
-          </h1>
-          <p className="mt-2 text-sm md:text-base text-muted-foreground max-w-2xl">
-            Real-time view of the TXC chain — projected next blocks, fees,
-            Omni-Layer token activity, and the address/tx/block you came here to find.
-          </p>
-          <div className="mt-6">
-            <SearchBar variant="hero" />
-          </div>
-        </div>
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-10">
+      <section className="text-center space-y-4">
+        <h1 className="font-display text-3xl sm:text-4xl tracking-wide">
+          ZERO CHILL UNITS<span className="text-primary">.</span>EXPLORER
+        </h1>
+        <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+          Real-time view of the {ZCU_NETWORK.networkName} — chain ID{" "}
+          <span className="font-mono text-foreground">{ZCU_NETWORK.chainId}</span>,{" "}
+          {ZCU_NETWORK.consensus}.
+        </p>
+        <SearchBar variant="hero" />
       </section>
 
-      <NetworkDifficultyChart />
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatTile
+          label="Block height"
+          value={chain ? formatNumber(chain.tipHeight) : "—"}
+          hint={latest ? timeAgo(latest.timestamp) : undefined}
+        />
+        <StatTile
+          label="Gas price"
+          value={chain ? formatGwei(chain.gasPriceWei) : "—"}
+          hint="node suggestion"
+        />
+        <StatTile
+          label="Txpool"
+          value={mempool ? formatNumber(mempool.pending) : "—"}
+          hint={mempool ? `${formatNumber(mempool.queued)} queued` : undefined}
+        />
+        <StatTile
+          label="Hashrate"
+          value={hashrate ? formatHashrate(hashrate) : "—"}
+          hint={avgBlockTime ? `${avgBlockTime.toFixed(1)}s block time` : undefined}
+        />
+      </section>
 
-      {/* Mempool + confirmed strips */}
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
+            Txpool by gas price
+          </h2>
+          <Link to="/mempool" className="text-xs text-primary hover:underline">
+            View txpool →
+          </Link>
+        </div>
+        <MempoolBlocksViz mempool={mempool} />
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
+            Latest blocks
+          </h2>
+          <Link to="/blocks" className="text-xs text-primary hover:underline">
+            All blocks →
+          </Link>
+        </div>
+        <ConfirmedBlocksStrip blocks={blocks} />
+      </section>
+
       <section className="grid lg:grid-cols-2 gap-6">
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-              <Zap className="size-4 text-primary" /> Mempool · projected blocks
-            </h2>
-            <Link to="/mempool" className="text-[11px] text-muted-foreground hover:text-primary font-medium">
-              {feed.mempool ? `${formatNumber(feed.mempool.count)} txs waiting →` : "view mempool →"}
-            </Link>
+        <div className="space-y-3">
+          <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
+            Pending transactions
+          </h2>
+          {pendingTxs.length === 0 ? (
+            <div className="rounded-md surface-2 border border-border px-4 py-8 text-sm text-muted-foreground text-center">
+              Nothing pending right now.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {pendingTxs.map((t) => (
+                <TxListRow
+                  key={t.hash}
+                  tx={{
+                    hash: t.hash,
+                    blockNumber: null,
+                    blockHash: null,
+                    txIndex: null,
+                    from: t.from,
+                    to: t.to,
+                    value: t.value,
+                    gasPrice: t.gasPrice,
+                    maxFeePerGas: null,
+                    maxPriorityFeePerGas: null,
+                    gas: t.gas,
+                    gasUsed: null,
+                    feeWei: null,
+                    status: null,
+                    nonce: t.nonce,
+                    input: "0x",
+                    methodId: null,
+                    contractAddress: null,
+                    timestamp: null,
+                    logs: [],
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
+            Chain at a glance
+          </h2>
+          <div className="rounded-md surface-2 border border-border divide-y divide-border font-mono text-xs">
+            {[
+              ["Network", ZCU_NETWORK.networkName],
+              ["Chain ID", `${ZCU_NETWORK.chainId} (${ZCU_NETWORK.chainIdHex})`],
+              ["Client", ZCU_NETWORK.client],
+              ["Consensus", ZCU_NETWORK.consensus],
+              ["Difficulty", latest ? formatDifficulty(latest.difficulty) : "—"],
+              ["Gas limit", latest ? formatGas(latest.gasLimit) : "—"],
+              ["Peers", chain ? String(chain.peerCount) : "—"],
+              ["Syncing", chain ? (chain.syncing ? "yes" : "no") : "—"],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-4 px-3 py-2">
+                <span className="text-muted-foreground">{k}</span>
+                <span className="text-foreground text-right break-all">{v}</span>
+              </div>
+            ))}
           </div>
-          <MempoolBlocksViz blocks={feed.mempoolBlocks} />
-        </div>
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-              <Activity className="size-4 text-accent" /> Recent confirmed blocks
-            </h2>
-            <a href="/blocks" className="text-[11px] text-muted-foreground hover:text-primary font-medium">
-              view all →
-            </a>
-          </div>
-          <ConfirmedBlocksStrip blocks={feed.blocks} />
         </div>
       </section>
-
-      {/* Stats + fees */}
-      <section className="grid md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatTile
-          label="Tip height"
-          value={feed.tipHeight != null ? formatNumber(feed.tipHeight) : "—"}
-          hint={feed.blocks[0] ? timeAgo(feed.blocks[0].timestamp) : ""}
-        />
-        <StatTile
-          label="Mempool size"
-          value={feed.mempool ? formatNumber(feed.mempool.count) + " tx" : "—"}
-          hint={feed.mempool ? formatBytes(feed.mempool.vsize) : ""}
-        />
-        <StatTile
-          label="Difficulty"
-          value={feed.blocks[0]?.difficulty ? feed.blocks[0].difficulty.toExponential(3) : "—"}
-          hint={
-            diff.data
-              ? `${diff.data.progressPercent.toFixed(1)}% · ${diff.data.remainingBlocks} blocks left`
-              : ""
-          }
-        />
-        <StatTile
-          label="Next retarget"
-          value={
-            diff.data
-              ? `${diff.data.difficultyChange >= 0 ? "+" : ""}${diff.data.difficultyChange.toFixed(2)}%`
-              : "—"
-          }
-          hint={diff.data && diff.data.remainingTime > 0 ? `in ~${Math.round(diff.data.remainingTime / 3600)}h` : ""}
-        />
-        <StatTile
-          label="Mined in"
-          value="Texas"
-          hint="by individuals · 3-min blocks"
-        />
-      </section>
-
-      <section className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <FeeGauge fees={feed.fees} />
-        </div>
-        <div className="lg:col-span-2 rounded-md surface-2 border border-border p-4">
-          <h3 className="font-display text-base uppercase tracking-wide mb-2">
-            What you're looking at
-          </h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            The colored boxes on the left are <strong className="text-foreground">projected blocks</strong> —
-            transactions currently in the mempool, bucketed by fee rate. The strip on
-            the right is the most recent <strong className="text-foreground">confirmed blocks</strong>.
-            Click any block to see its txs, click any tx to see inputs/outputs, and
-            paste a TXC address (starting with <span className="font-mono">T</span>) in
-            the search bar to see history. <strong className="text-foreground">Omni-Layer</strong> token
-            operations (POP, ImagineNation tokens, anything using <span className="font-mono">"omni"</span> OP_RETURN)
-            are decoded automatically on the transaction page.
-          </p>
-        </div>
-      </section>
-
-      <RecentTransactions />
     </div>
-  );
-}
-
-function RecentTransactions() {
-  const recent = useQuery({
-    queryKey: ["mempool", "recent", "home"],
-    queryFn: () => esplora.mempoolRecent(),
-    refetchInterval: 10_000,
-    retry: 0,
-  });
-
-  return (
-    <section>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-          <Clock className="size-4 text-accent" /> Recent transactions
-        </h2>
-        <Link to="/mempool" className="text-[11px] text-muted-foreground hover:text-primary font-medium">
-          view all in mempool →
-        </Link>
-      </div>
-      {recent.isLoading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
-      ) : !recent.data?.length ? (
-        <div className="surface-2 border border-border rounded-md p-6 text-sm text-muted-foreground text-center">
-          No recent unconfirmed transactions.
-        </div>
-      ) : (
-        <div className="grid gap-1.5">
-          {recent.data.slice(0, 12).map((t) => {
-            const feeRate = t.vsize > 0 ? t.fee / t.vsize : 0;
-            return (
-              <Link
-                key={t.txid}
-                to="/tx/$txid"
-                params={{ txid: t.txid }}
-                className="surface-2 border border-border rounded-md px-3 py-2 hover:border-primary/60 transition-colors flex items-center justify-between gap-3 text-xs"
-              >
-                <span className="font-mono truncate">{shortHash(t.txid, 14, 14)}</span>
-                <div className="flex items-center gap-4 flex-shrink-0 font-mono">
-                  <span className="text-muted-foreground hidden sm:inline">{t.vsize} vB</span>
-                  <span className="text-accent">{feeRate.toFixed(2)} sat/vB</span>
-                  <span className="text-foreground">{satsToTxc(t.value)} TXC</span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-    </section>
   );
 }

@@ -1,98 +1,212 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { esplora, txFeeRate } from "@/lib/txc/esplora";
-import { StatTile } from "@/components/explorer/StatTile";
-import { TxFlow } from "@/components/explorer/TxFlow";
-import { TxFlowDiagram } from "@/components/explorer/TxFlowDiagram";
-import { UsdValue } from "@/components/explorer/UsdValue";
-import { formatBytes, formatDateTime, formatNumber, satsToTxc, shortHash, timeAgo } from "@/lib/txc/format";
-
+import { zcu } from "@/lib/zcu/api";
+import {
+  formatNumber,
+  formatGwei,
+  formatGas,
+  formatZcu,
+  timeAgo,
+  formatDateTime,
+} from "@/lib/zcu/format";
 
 export const Route = createFileRoute("/tx/$txid")({
-  head: ({ params }) => ({
-    meta: [
-      { title: `Tx ${params.txid.slice(0, 12)}… — TXC Mempool` },
-      { name: "description", content: `TEXITcoin transaction ${params.txid}: inputs, outputs, fees, and Omni-Layer decoded payload.` },
-      { property: "og:title", content: `TXC Tx ${params.txid.slice(0, 12)}…` },
-    ],
-  }),
+  head: ({ params }) => {
+    const title = `Transaction ${params.txid.slice(0, 12)} — ZCU Explorer`;
+    const desc = `Zero Chill Units transaction ${params.txid}: sender, recipient, value, gas, status and event logs.`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { property: "og:title", content: title },
+        { property: "og:description", content: desc },
+      ],
+    };
+  },
   component: TxPage,
 });
 
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 px-3 py-2">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-foreground break-all sm:text-right">{value}</span>
+    </div>
+  );
+}
+
 function TxPage() {
   const { txid } = Route.useParams();
-  const tx = useQuery({ queryKey: ["mempool", "tx", txid], queryFn: () => esplora.tx(txid) });
-  const tip = useQuery({ queryKey: ["mempool", "tip-height"], queryFn: () => esplora.tipHeight(), refetchInterval: 30_000 });
+  const q = useQuery({
+    queryKey: ["zcu", "tx", txid],
+    queryFn: () => zcu.tx(txid),
+    // A pending tx flips to mined; poll until it settles.
+    refetchInterval: (query) => (query.state.data?.status == null ? 5_000 : false),
+    retry: 1,
+  });
 
-  const t = tx.data;
-  if (tx.isLoading) return <div className="max-w-7xl mx-auto px-4 py-6 text-muted-foreground">Loading transaction…</div>;
-  if (tx.isError || !t) {
+  if (q.isLoading) {
+    return <div className="max-w-5xl mx-auto px-4 py-16 text-sm text-muted-foreground">Loading transaction…</div>;
+  }
+  if (q.isError || !q.data) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-10 text-center">
-        <h1 className="font-display text-2xl mb-2">Transaction not found</h1>
+      <div className="max-w-5xl mx-auto px-4 py-16 space-y-3">
+        <h1 className="font-display text-xl">Transaction not found</h1>
         <p className="text-sm text-muted-foreground font-mono break-all">{txid}</p>
+        <p className="text-xs text-muted-foreground">
+          It may not have reached this node yet, or it was dropped from the txpool.
+        </p>
+        <Link to="/" className="text-primary text-sm hover:underline">← Dashboard</Link>
       </div>
     );
   }
 
-  const totalIn = t.vin.reduce((s, v) => s + (v.prevout?.value ?? 0), 0);
-  const totalOut = t.vout.reduce((s, v) => s + v.value, 0);
-  const fr = txFeeRate(t);
-  const confirmations = t.status.confirmed && tip.data != null && t.status.block_height != null
-    ? tip.data - t.status.block_height + 1
-    : 0;
+  const t = q.data;
+  const pending = t.status == null;
+  const failed = t.status === 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-      <div>
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Transaction</div>
-        <h1 className="font-display text-2xl md:text-3xl mt-1 font-mono break-all">{shortHash(txid, 16, 16)}</h1>
-        <div className="mt-1 font-mono text-xs text-muted-foreground break-all">{txid}</div>
-        <div className="mt-2 flex flex-wrap gap-2 items-center">
-          {t.status.confirmed ? (
-            <span className="px-2 py-0.5 rounded-sm bg-success/20 text-success text-[11px] uppercase font-semibold">
-              Confirmed · {formatNumber(confirmations)} conf
-            </span>
-          ) : (
-            <span className="px-2 py-0.5 rounded-sm bg-warning/20 text-warning text-[11px] uppercase font-semibold animate-pulse-dot">
-              In mempool
-            </span>
-          )}
-          {t.status.confirmed && t.status.block_hash && (
-            <Link
-              to="/block/$hash"
-              params={{ hash: t.status.block_hash }}
-              className="text-xs text-accent hover:underline"
-            >
-              block #{formatNumber(t.status.block_height ?? 0)}
-            </Link>
-          )}
+    <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <header className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+            Transaction
+          </span>
+          <span
+            className={`px-2 py-0.5 rounded-sm text-[10px] uppercase font-semibold ${
+              pending
+                ? "bg-warning/20 text-warning"
+                : failed
+                  ? "bg-destructive/20 text-destructive"
+                  : "bg-success/20 text-success"
+            }`}
+          >
+            {pending ? "Pending" : failed ? "Failed" : "Success"}
+          </span>
+        </div>
+        <h1 className="font-mono text-sm break-all">{t.hash}</h1>
+      </header>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="rounded-md surface-2 border border-border divide-y divide-border font-mono text-xs">
+          <Row
+            label="From"
+            value={
+              <Link to="/address/$addr" params={{ addr: t.from }} className="text-primary hover:underline">
+                {t.from}
+              </Link>
+            }
+          />
+          <Row
+            label="To"
+            value={
+              t.to ? (
+                <Link to="/address/$addr" params={{ addr: t.to }} className="text-primary hover:underline">
+                  {t.to}
+                </Link>
+              ) : t.contractAddress ? (
+                <span>
+                  contract created:{" "}
+                  <Link
+                    to="/address/$addr"
+                    params={{ addr: t.contractAddress }}
+                    className="text-primary hover:underline"
+                  >
+                    {t.contractAddress}
+                  </Link>
+                </span>
+              ) : (
+                "contract creation"
+              )
+            }
+          />
+          <Row label="Value" value={formatZcu(t.value)} />
+          <Row label="Nonce" value={t.nonce} />
+          <Row
+            label="Block"
+            value={
+              t.blockNumber != null ? (
+                <Link
+                  to="/block/$hash"
+                  params={{ hash: String(t.blockNumber) }}
+                  className="text-primary hover:underline"
+                >
+                  {formatNumber(t.blockNumber)}
+                </Link>
+              ) : (
+                "pending"
+              )
+            }
+          />
+          <Row
+            label="Timestamp"
+            value={t.timestamp ? `${formatDateTime(t.timestamp)} (${timeAgo(t.timestamp)})` : "—"}
+          />
+        </div>
+
+        <div className="rounded-md surface-2 border border-border divide-y divide-border font-mono text-xs">
+          <Row label="Gas price" value={formatGwei(t.gasPrice)} />
+          <Row label="Max fee" value={t.maxFeePerGas ? formatGwei(t.maxFeePerGas) : "—"} />
+          <Row
+            label="Priority fee"
+            value={t.maxPriorityFeePerGas ? formatGwei(t.maxPriorityFeePerGas) : "—"}
+          />
+          <Row label="Gas limit" value={formatGas(t.gas)} />
+          <Row
+            label="Gas used"
+            value={
+              t.gasUsed != null
+                ? `${formatGas(t.gasUsed)} (${((t.gasUsed / t.gas) * 100).toFixed(1)}%)`
+                : "—"
+            }
+          />
+          <Row label="Fee paid" value={t.feeWei ? formatZcu(t.feeWei) : "—"} />
+          <Row label="Method" value={t.methodId ?? "plain transfer"} />
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatTile
-          label="Fee"
-          value={<>{satsToTxc(t.fee)} TXC</>}
-          hint={<><span>{fr.toFixed(2)} sat/vB</span> · <UsdValue sats={t.fee} hideZero /></>}
-        />
-        <StatTile label="Size" value={formatBytes(t.size)} hint={`vsize ${(t.weight / 4).toFixed(0)}`} />
-        <StatTile label="Weight" value={`${formatNumber(t.weight)} wu`} />
-        <StatTile
-          label="Total out"
-          value={<>{satsToTxc(totalOut)} TXC</>}
-          hint={<><UsdValue sats={totalOut} /> · {t.vin[0]?.is_coinbase ? "coinbase issuance" : `in ${satsToTxc(totalIn)}`}</>}
-        />
-        <StatTile
-          label="Time"
-          value={t.status.block_time ? timeAgo(t.status.block_time) : "pending"}
-          hint={t.status.block_time ? formatDateTime(t.status.block_time) : undefined}
-        />
-      </div>
+      {t.input && t.input !== "0x" && (
+        <section className="space-y-2">
+          <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
+            Input data
+          </h2>
+          <pre className="rounded-md surface-2 border border-border p-3 font-mono text-[11px] break-all whitespace-pre-wrap max-h-64 overflow-auto">
+            {t.input}
+          </pre>
+        </section>
+      )}
 
-      <TxFlowDiagram tx={t} />
-      <TxFlow tx={t} />
-
+      {t.logs.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
+            Event logs ({t.logs.length})
+          </h2>
+          <div className="space-y-2">
+            {t.logs.map((l) => (
+              <div key={l.logIndex} className="rounded-md surface-2 border border-border p-3 font-mono text-[11px] space-y-1">
+                <div>
+                  <span className="text-muted-foreground">address </span>
+                  <Link to="/address/$addr" params={{ addr: l.address }} className="text-primary hover:underline">
+                    {l.address}
+                  </Link>
+                </div>
+                {l.topics.map((tp, i) => (
+                  <div key={i} className="break-all">
+                    <span className="text-muted-foreground">topic{i} </span>
+                    {tp}
+                  </div>
+                ))}
+                {l.data && l.data !== "0x" && (
+                  <div className="break-all">
+                    <span className="text-muted-foreground">data </span>
+                    {l.data}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

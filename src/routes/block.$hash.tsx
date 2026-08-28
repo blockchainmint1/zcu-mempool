@@ -1,130 +1,139 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { esplora } from "@/lib/txc/esplora";
-import { StatTile } from "@/components/explorer/StatTile";
-import { UsdValue } from "@/components/explorer/UsdValue";
+import { zcu } from "@/lib/zcu/api";
+import {
+  formatNumber,
+  formatGwei,
+  formatGas,
+  formatZcu,
+  formatDifficulty,
+  formatBytes,
+  shortAddr,
+  timeAgo,
+  formatDateTime,
+} from "@/lib/zcu/format";
 import { TxListRow } from "@/components/explorer/TxListRow";
-import { formatBytes, formatDateTime, formatNumber, satsToTxc, shortHash, timeAgo } from "@/lib/txc/format";
 
 export const Route = createFileRoute("/block/$hash")({
-  head: ({ params }) => ({
-    meta: [
-      { title: `Block ${params.hash.slice(0, 12)}… — TXC Mempool` },
-      { name: "description", content: `Block ${params.hash} on the TEXITcoin chain.` },
-      { property: "og:title", content: `TXC Block ${params.hash.slice(0, 12)}…` },
-    ],
-  }),
+  head: ({ params }) => {
+    const title = `Block ${params.hash.slice(0, 12)} — ZCU Explorer`;
+    const desc = `Zero Chill Units block ${params.hash}: miner, gas usage, base fee, difficulty and full transaction list.`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { property: "og:title", content: title },
+        { property: "og:description", content: desc },
+      ],
+    };
+  },
   component: BlockPage,
 });
 
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 px-3 py-2">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-foreground break-all sm:text-right">{value}</span>
+    </div>
+  );
+}
+
 function BlockPage() {
   const { hash } = Route.useParams();
-  const [page, setPage] = useState(0);
-  const block = useQuery({ queryKey: ["mempool", "block", hash], queryFn: () => esplora.blockByHash(hash) });
-  const txs = useQuery({
-    queryKey: ["mempool", "block-txs", hash, page],
-    queryFn: () => esplora.blockTxs(hash, page * 25),
+  const q = useQuery({
+    queryKey: ["zcu", "block", hash],
+    queryFn: () => zcu.blockTxs(hash),
+    staleTime: 60_000,
+    retry: 1,
   });
-  const b = block.data;
+
+  if (q.isLoading) {
+    return <div className="max-w-5xl mx-auto px-4 py-16 text-sm text-muted-foreground">Loading block…</div>;
+  }
+  if (q.isError || !q.data) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-16 space-y-3">
+        <h1 className="font-display text-xl">Block not found</h1>
+        <p className="text-sm text-muted-foreground font-mono break-all">{hash}</p>
+        <Link to="/blocks" className="text-primary text-sm hover:underline">← All blocks</Link>
+      </div>
+    );
+  }
+
+  const { block: b, txs } = q.data;
+  const util = b.gasLimit > 0 ? (b.gasUsed / b.gasLimit) * 100 : 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-      <div>
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Block</div>
-        <h1 className="font-display text-3xl mt-1">
-          {b ? `#${formatNumber(b.height)}` : "Loading…"}
-        </h1>
-        <div className="mt-1 font-mono text-xs text-muted-foreground break-all">{hash}</div>
-      </div>
-
-      {b && (
-        <>
-          <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-3">
-            <StatTile label="Timestamp" value={timeAgo(b.timestamp)} hint={formatDateTime(b.timestamp)} />
-            <StatTile label="Transactions" value={formatNumber(b.tx_count)} />
-            <StatTile label="Size" value={formatBytes(b.size)} hint={`${formatNumber(b.weight)} wu`} />
-            <StatTile
-              label="Pool"
-              value={b.extras?.pool?.name ?? "Unknown"}
-              hint={b.extras?.reward != null ? <>{satsToTxc(b.extras.reward)} TXC · <UsdValue sats={b.extras.reward} /></> : undefined}
-            />
-            <StatTile
-              label="Median fee"
-              value={b.extras?.medianFee != null ? `${b.extras.medianFee.toFixed(1)} sat/vB` : "—"}
-              hint={
-                b.extras?.feeRange?.length
-                  ? `range ${b.extras.feeRange[0].toFixed(1)} – ${b.extras.feeRange[b.extras.feeRange.length - 1].toFixed(1)}`
-                  : undefined
-              }
-            />
-          </div>
-
-          <div className="rounded-md surface-2 border border-border p-4 grid md:grid-cols-2 gap-4 font-mono text-xs">
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Merkle root</div>
-              <div className="break-all mt-1">{b.merkle_root}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Previous block</div>
-              {b.previousblockhash ? (
-                <Link
-                  to="/block/$hash"
-                  params={{ hash: b.previousblockhash }}
-                  className="break-all mt-1 block hover:text-primary"
-                >
-                  {b.previousblockhash}
-                </Link>
-              ) : (
-                <div className="mt-1 text-muted-foreground">—</div>
-              )}
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Nonce</div>
-              <div className="mt-1">{b.nonce}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Bits / Difficulty</div>
-              <div className="mt-1">{b.bits.toString(16)} · {b.difficulty.toExponential(3)}</div>
-            </div>
-          </div>
-        </>
-      )}
-
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
-            Transactions
-          </h2>
-          <div className="text-[11px] text-muted-foreground font-mono">
-            page {page + 1}{b ? ` of ${Math.max(1, Math.ceil(b.tx_count / 25))}` : ""}
-          </div>
+    <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <header className="space-y-2">
+        <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Block</div>
+        <h1 className="font-display text-3xl tracking-wide">{formatNumber(b.number)}</h1>
+        <div className="font-mono text-xs text-muted-foreground break-all">{b.hash}</div>
+        <div className="flex gap-3 text-xs font-mono pt-1">
+          {b.number > 0 && (
+            <Link to="/block/$hash" params={{ hash: String(b.number - 1) }} className="text-primary hover:underline">
+              ← prev
+            </Link>
+          )}
+          <Link to="/block/$hash" params={{ hash: String(b.number + 1) }} className="text-primary hover:underline">
+            next →
+          </Link>
         </div>
-        <div className="space-y-2">
-          {txs.isLoading && <div className="text-sm text-muted-foreground">Loading transactions…</div>}
-          {txs.data?.map((t) => <TxListRow key={t.txid} tx={t} />)}
+      </header>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="rounded-md surface-2 border border-border divide-y divide-border font-mono text-xs">
+          <Row label="Timestamp" value={`${formatDateTime(b.timestamp)} (${timeAgo(b.timestamp)})`} />
+          <Row
+            label="Miner"
+            value={
+              <Link to="/address/$addr" params={{ addr: b.miner }} className="text-primary hover:underline">
+                {b.miner}
+              </Link>
+            }
+          />
+          <Row label="Transactions" value={formatNumber(b.txCount)} />
+          <Row label="Size" value={formatBytes(b.size)} />
+          <Row label="Difficulty" value={formatDifficulty(b.difficulty)} />
+          <Row label="Total difficulty" value={formatDifficulty(b.totalDifficulty)} />
         </div>
-        <div className="flex justify-between mt-4">
-          <button
-            disabled={page === 0}
-            className="px-3 py-1.5 text-sm rounded-md surface-2 border border-border hover:border-primary disabled:opacity-40"
-            onClick={() => { setPage((p) => Math.max(0, p - 1)); window.scrollTo({ top: 400 }); }}
-          >
-            ← Previous
-          </button>
-          <button
-            disabled={!txs.data || txs.data.length < 25 || (b ? (page + 1) * 25 >= b.tx_count : false)}
-            className="px-3 py-1.5 text-sm rounded-md surface-2 border border-border hover:border-primary disabled:opacity-40"
-            onClick={() => { setPage((p) => p + 1); window.scrollTo({ top: 400 }); }}
-          >
-            Next →
-          </button>
+        <div className="rounded-md surface-2 border border-border divide-y divide-border font-mono text-xs">
+          <Row label="Gas used" value={`${formatGas(b.gasUsed)} (${util.toFixed(1)}%)`} />
+          <Row label="Gas limit" value={formatGas(b.gasLimit)} />
+          <Row label="Base fee" value={b.baseFeePerGas ? formatGwei(b.baseFeePerGas) : "—"} />
+          <Row label="Fees collected" value={b.feesWei ? formatZcu(b.feesWei) : "—"} />
+          <Row label="Nonce" value={b.nonce} />
+          <Row
+            label="Parent"
+            value={
+              <Link to="/block/$hash" params={{ hash: b.parentHash }} className="text-primary hover:underline">
+                {shortAddr(b.parentHash)}
+              </Link>
+            }
+          />
         </div>
       </div>
 
-      <div className="text-xs text-muted-foreground font-mono">
-        Permalink: <span>{shortHash(hash)}</span>
+      <div className="rounded-md surface-2 border border-border px-3 py-2 font-mono text-[11px] text-muted-foreground break-all">
+        <span className="uppercase tracking-widest mr-2">extraData</span>
+        {b.extraData}
       </div>
+
+      <section className="space-y-3">
+        <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
+          Transactions ({txs.length})
+        </h2>
+        {txs.length === 0 ? (
+          <div className="rounded-md surface-2 border border-border px-4 py-8 text-sm text-muted-foreground text-center">
+            This block is empty.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {txs.map((t) => <TxListRow key={t.hash} tx={t} />)}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

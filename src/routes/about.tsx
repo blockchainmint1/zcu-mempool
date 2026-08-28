@@ -1,12 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ZCU_NETWORK } from "@/lib/zcu/network";
+
+const TITLE = "About — ZCU Explorer";
+const DESC =
+  "What the Zero Chill Units explorer is, which node it reads from, and how the chain works: Scrypt PoW with AuxPoW merged mining on an EVM.";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About — TXC Mempool Explorer" },
-      { name: "description", content: "What TXC Mempool is, how it works, and the data sources behind it." },
-      { property: "og:title", content: "About TXC Mempool" },
-      { property: "og:description", content: "How the TEXITcoin block explorer works." },
+      { title: TITLE },
+      { name: "description", content: DESC },
+      { property: "og:title", content: TITLE },
+      { property: "og:description", content: DESC },
     ],
   }),
   component: AboutPage,
@@ -14,68 +19,67 @@ export const Route = createFileRoute("/about")({
 
 function AboutPage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10 prose-invert">
-      <h1 className="font-display text-4xl mb-4">About TXC Mempool</h1>
+    <div className="max-w-3xl mx-auto px-4 py-10">
+      <h1 className="font-display text-4xl mb-4">About this explorer</h1>
       <p className="text-muted-foreground leading-relaxed">
-        TXC Mempool is a real-time block explorer for the{" "}
-        <a href="https://texitcoin.org" target="_blank" rel="noreferrer" className="text-primary hover:underline">TEXITcoin</a>{" "}
-        chain. It mirrors the look and feel of mempool.space — fee bucket
-        visualizations, projected next blocks, fee gauges, mining pool stats —
-        and adds <strong className="text-foreground">first-class decoding for Omni-Layer L2 token activity</strong>{" "}
-        carried in TXC OP_RETURN outputs.
+        A real-time block explorer for{" "}
+        <a href="https://zerochill.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+          Zero Chill Units
+        </a>{" "}
+        — an EVM chain secured by Scrypt proof-of-work with AuxPoW merged
+        mining. Everything you see is read live from a Zero Chill node; nothing
+        is cached longer than a few seconds.
       </p>
+
+      <h2 className="font-display text-2xl mt-8 mb-3">Chain parameters</h2>
+      <div className="rounded-md surface-2 border border-border divide-y divide-border font-mono text-xs">
+        {[
+          ["Network", ZCU_NETWORK.networkName],
+          ["Ticker", ZCU_NETWORK.ticker],
+          ["Chain ID", `${ZCU_NETWORK.chainId} (${ZCU_NETWORK.chainIdHex})`],
+          ["Decimals", String(ZCU_NETWORK.decimals)],
+          ["Consensus", ZCU_NETWORK.consensus],
+          ["Client", ZCU_NETWORK.client],
+          ["Genesis", ZCU_NETWORK.genesisHash],
+          ["P2P port", String(ZCU_NETWORK.p2pPort)],
+          ["Public RPC", "https://node-zcu.honest.money"],
+        ].map(([k, v]) => (
+          <div key={k} className="flex flex-col sm:flex-row sm:justify-between gap-1 px-3 py-2">
+            <span className="text-muted-foreground">{k}</span>
+            <span className="text-foreground break-all sm:text-right">{v}</span>
+          </div>
+        ))}
+      </div>
 
       <h2 className="font-display text-2xl mt-8 mb-3">Where the data comes from</h2>
       <p className="text-muted-foreground leading-relaxed">
-        Everything is read live from our own infrastructure at{" "}
-        <code className="font-mono text-foreground">api.mempool.texitcoin.org</code>:
-        a fully-synced TXC node (Litecoin-fork, Scrypt PoW, 3-min target), a
-        custom Esplora-compatible address indexer, and the mempool backend on
-        top — all self-hosted, no third parties in the path. When available,
-        this UI subscribes to the WebSocket at{" "}
-        <code className="font-mono text-foreground">wss://api.mempool.texitcoin.org/api/v1/ws</code>{" "}
-        for live updates; otherwise it polls every 10 seconds. The status pill
-        in the dashboard hero tells you which mode you're in.
+        This site talks to a go-ethereum node over JSON-RPC and re-serves the
+        results through its own{" "}
+        <Link to="/docs" className="text-primary hover:underline">public API</Link>.
+        Blocks, transactions, receipts, balances, the txpool and mining stats
+        are all live reads — there is no third party in the path.
       </p>
 
-      <h2 className="font-display text-2xl mt-8 mb-3">OP_RETURN & Omni-Layer</h2>
+      <h2 className="font-display text-2xl mt-8 mb-3">What is not here yet</h2>
       <p className="text-muted-foreground leading-relaxed">
-        TXC carries token activity through the Omni-Layer protocol: regular TXC
-        transactions whose first OP_RETURN output begins with the ASCII magic{" "}
-        <code className="font-mono text-foreground">"omni"</code> (0x6f 0x6d 0x6e 0x69),
-        followed by a binary version + type + payload. This explorer decodes:
-      </p>
-      <ul className="list-disc pl-6 space-y-1 text-muted-foreground text-sm mt-2">
-        <li>Simple Send (type 0)</li>
-        <li>Send All (type 4)</li>
-        <li>Create Property Fixed (type 50) and Managed (type 54)</li>
-        <li>Grant (55), Revoke (56), Close Crowdsale (53), Change Issuer (70)</li>
-      </ul>
-      <p className="text-muted-foreground leading-relaxed mt-3">
-        For the canonical L2 spec see{" "}
-        <a href="https://cryptopop.asia/api" target="_blank" rel="noreferrer" className="text-primary hover:underline">cryptopop.asia/api</a>{" "}
-        and{" "}
-        <a href="https://imaginenation.com/api" target="_blank" rel="noreferrer" className="text-primary hover:underline">imaginenation.com/api</a>.
-        Unknown payload types are displayed as raw hex so you can still see
-        them.
+        Per-address transaction history, token transfers and a richlist all
+        require indexing every block's logs into a database. Live state
+        (balances, nonces, contract code) is exact today; historical queries
+        arrive with the indexer.
       </p>
 
-      <h2 className="font-display text-2xl mt-8 mb-3">The ecosystem</h2>
-      <ul className="list-disc pl-6 space-y-1 text-muted-foreground text-sm">
-        <li><a href="https://texitcoin.org" className="text-primary hover:underline" target="_blank" rel="noreferrer">texitcoin.org</a> — chain home</li>
-        <li><a href="https://honest.money" className="text-primary hover:underline" target="_blank" rel="noreferrer">honest.money</a> — the umbrella ecosystem</li>
-        <li><a href="https://api.mempool.texitcoin.org" className="text-primary hover:underline" target="_blank" rel="noreferrer">api.mempool.texitcoin.org</a> — public REST + WebSocket API</li>
-        <li><a href="https://explorer.texitcoin.org" className="text-primary hover:underline" target="_blank" rel="noreferrer">explorer.texitcoin.org</a> — classic block explorer</li>
-      </ul>
-
-      <div className="mt-10">
-        <Link
-          to="/"
-          className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-        >
-          ← Back to dashboard
-        </Link>
-      </div>
+      <h2 className="font-display text-2xl mt-8 mb-3">Run a node</h2>
+      <p className="text-muted-foreground leading-relaxed">
+        Full setup instructions, genesis file and peer list live at{" "}
+        <a href={ZCU_NETWORK.buildDocs} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+          zerochill.com/build
+        </a>
+        . Source for the node client is at{" "}
+        <a href={ZCU_NETWORK.sourceRepo} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+          the zcu-geth repository
+        </a>
+        .
+      </p>
     </div>
   );
 }
