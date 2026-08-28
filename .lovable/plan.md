@@ -1,66 +1,105 @@
-# Three-part build: Public API, Live Price, Fun Address Page
+# ZCU Explorer Indexer Plan
 
-## 1) Public API + `/docs` page
+## What we found
 
-Stand up a **TXC-flavored** version of the mempool.space REST/WebSocket API, hosted on our explorer at `/api/v1/*`. Routes proxy through to the self-hosted backend at `api.mempool.texitcoin.org` and add TXC-only extras.
+The ZCU chain is extremely small:
+- 26,355 blocks total
+- **4 transactions** in the entire chain history
+- 5 unique addresses
+- 0 contract deployments, 0 event logs
+- `eth_getLogs` works (for future token transfers)
+- `trace_*` methods are NOT available (no native "txs by address" lookup)
 
-**New server routes** (under `src/routes/api/public/v1/`, so they're CORS-free for outside callers):
-- `blocks/tip/height`, `blocks/tip/hash`
-- `block/$hash`, `block/$hash/txids`, `block-height/$height`
-- `blocks` (paginated), `blocks/$startHeight`
-- `tx/$txid`, `tx/$txid/status`, `tx/$txid/hex`, `tx/$txid/outspends`
-- `address/$addr`, `address/$addr/utxo`, `address/$addr/txs`
-- `mempool`, `mempool/recent`, `fees/recommended`, `fees/mempool-blocks`
-- `mining/pools/24h|1w|1m`, `difficulty-adjustment`
-- **TXC extras**: `omni/tx/$txid` (decoded Omni payload), `price` (live TXC price + 24h change), `supply` (circulating supply from emission curve)
-- `ws` — thin WebSocket pass-through to the upstream mempool WS, so external apps can subscribe to new blocks/txs/address updates
+Because there is no trace API and geth can't list transactions by address, address
+history and richlist **require an indexer**. But the chain is so small that a full
+sync is near-instant.
 
-All routes: GET-only, CORS `*`, OPTIONS handlers, JSON, 30-60s edge cache where appropriate.
+## Architecture: in-app indexer backed by Lovable Cloud
 
-**New `/docs` route**: a clean, searchable reference page (left sidebar of categories, right pane with endpoint + example curl + example JSON response) styled in the explorer's dark theme. Tabs for **REST** and **WebSocket**.
+No separate indexer box. The app itself owns the index:
 
-## 2) Live TXC price (CoinMarketCap)
+```
+ZCU geth node (RPC)
+      │
+      ▼
+Indexer server fn (batch: fetch N blocks → store txs + logs + addresses)
+      │  triggered by cron endpoint /api/public/index
+      ▼
+Lovable Cloud Postgres
+  - transactions table (from, to, value, block, status, fee, …)
+  - logs table (address, topics, data — for token transfers)
+  - tracked_addresses table (every address that ever sent/received/mined)
+      │
+      ▼
+API routes read from DB for history/richlist, RPC for live balance/nonce
+```
 
-- Add `CMC_API_KEY` secret.
-- New server fn `getTxcPrice` → calls CMC `/v2/cryptocurrency/quotes/latest?symbol=TXC`, caches result for 60s in memory.
-- New `/api/v1/price` public endpoint exposes `{ usd, btc, change24h, marketCap, volume24h, updatedAt }`.
-- New `<PriceTicker>` component pinned in the top nav: TXC/USD with green/red 24h delta.
-- USD values appear next to TXC amounts on the **address** and **tx** pages (toggleable).
+## Why this works here
 
-## 3) Supercharged address page
+- Full chain sync = 26k blocks × near-zero txs = finishes in one batch run
+- Ongoing: ~1 new block every 4 min, near-zero txs → indexer stays current with a
+  cron tick every few minutes
+- Lovable Cloud Postgres is included, zero external setup
+- The Worker runtime can't run a long-lived process, but a batch server fn that
+  indexes 200 blocks per invocation finishes well within limits
 
-Rebuild `/address/$addr` into a multi-section dashboard:
+## Step 1 — Enable Lovable Cloud
 
-1. **Header card** (existing) + new pills: first-seen, last-seen, age, Type badge (P2PKH / P2SH / Multisig / Omni-issuer if detected).
-2. **Balance History chart** — line/area chart (Recharts), computed client-side by walking the address's tx history and summing deltas. Toggle: All vs Last 30 days. USD overlay if price is available.
-3. **UTXO bubble chart** — packed circles sized by sat value, color-graded by age (fresh → aged). Hover = value + height + age. Click = jump to funding tx.
-4. **Activity heatmap** — GitHub-style 12-month grid, one cell per day, intensity = tx count.
-5. **Flow & counterparties** — totals received vs sent, top 5 sending addresses, top 5 receiving addresses (with TXC totals), Omni token holdings if present.
-6. **Tx history list** (existing) moved to the bottom, with sticky filter chips: All / Received / Sent / Omni / Coinbase.
+Enables Postgres + server functions. One action, no external accounts.
 
-## Technical details
+## Step 2 — Database migration
 
-- Server routes use `createFileRoute(... )({ server: { handlers: { GET, OPTIONS } } })` with shared `CORS_HEADERS` helper at `src/lib/api/cors.ts`.
-- A thin `proxy(path)` helper in `src/lib/api/upstream.ts` fetches from `https://api.mempool.texitcoin.org/api/v1/...` and returns `Response.json(...)` with CORS + cache headers.
-- Charts use the existing `recharts` (already in deps); bubble packing uses `d3-hierarchy` (small, edge-safe).
-- Heatmap is a custom CSS-grid component (no extra dep).
-- Price fetcher is a server fn (keeps CMC key server-side), called from a React Query hook polling every 60s.
-- Docs page content is a single data file (`src/lib/docs/api-spec.ts`) so endpoints stay easy to edit.
+Tables (all in `public` schema, with RLS disabled for public reads via service-role
+writes):
 
-## Files (new)
-- `src/lib/api/cors.ts`, `src/lib/api/upstream.ts`
-- `src/routes/api/public/v1/*.ts` (one per endpoint group)
-- `src/routes/docs.tsx`
-- `src/lib/docs/api-spec.ts`
-- `src/lib/txc/price.functions.ts`, `src/components/explorer/PriceTicker.tsx`
-- `src/components/address/BalanceHistoryChart.tsx`
-- `src/components/address/UtxoBubbleChart.tsx`
-- `src/components/address/ActivityHeatmap.tsx`
-- `src/components/address/CounterpartiesPanel.tsx`
+- `indexed_txs` — one row per transaction: hash, block_number, block_hash, from, to,
+  value, gas, gas_price, fee_wei, status, nonce, input, method_id, contract_address,
+  timestamp, tx_index
+- `indexed_logs` — one row per log: tx_hash, block_number, address, topic0..3, data,
+  log_index, timestamp
+- `tracked_addresses` — address, first_seen_block, last_seen_block, is_contract,
+  cached_balance_wei, balance_updated_at
+- `index_state` — single row tracking `last_indexed_block`
 
-## Out of scope (for this round)
-- Persisting historical price snapshots (we'll just cache live).
-- Authenticated/rate-limited API keys (open public API for now).
-- Mobile-specific layouts beyond what Tailwind responsive utilities already give us.
+## Step 3 — Indexer server function
 
-Ready to build — shall I go?
+`src/lib/zcu/indexer.functions.ts`:
+
+1. Read `index_state.last_indexed_block`
+2. Fetch next batch (e.g. 250 blocks) via `eth_getBlockByNumber` with full txs
+3. For each block: insert txs, fetch + insert receipts/logs, track addresses
+4. Update `index_state`
+5. Return `{ indexed_to: N, new_txs: M }`
+
+Called from a cron endpoint `src/routes/api/public/index.ts` (public, secured by a
+bearer secret) so it can be triggered by a scheduler.
+
+## Step 4 — Richlist balance refresh
+
+A companion server fn that iterates `tracked_addresses`, calls `eth_getBalance` for
+each, and updates `cached_balance_wei`. With ~5–50 addresses this is one batch RPC
+call. Richlist = `ORDER BY cached_balance_wei DESC`.
+
+## Step 5 — Enhanced API routes
+
+- `/api/v1/address/$addr` — add `transactions[]` from `indexed_txs` (paginated)
+- `/api/v1/address/$addr/tokens` — token transfers from `indexed_logs`
+- `/api/v1/richlist` — top N by cached balance
+- Keep live balance/nonce from RPC for the "current state" card
+
+## Step 6 — Frontend
+
+- Address page: show transaction history table (was a "needs indexer" placeholder)
+- Restore `/richlist` route with a top-holders table
+- Mining page already works from RPC; no change
+
+## What this does NOT do
+
+- No separate server/box to provision or maintain
+- No long-running process — cron triggers short batch runs
+- Token transfers page stays minimal until contracts exist on chain (none today)
+
+## Cron
+
+After publish, set a cron to hit `https://<project>.lovable.app/api/public/index`
+every 5 minutes with the bearer secret. Exact `curl` command provided when ready.
