@@ -7,7 +7,6 @@ import {
   formatGwei,
   formatGas,
   shortAddr,
-  shortHash,
   timeAgo,
   formatZcu,
 } from "@/lib/zcu/format";
