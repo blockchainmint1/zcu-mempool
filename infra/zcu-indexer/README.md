@@ -14,7 +14,7 @@ richlist need an index. That is what this box builds.
 | `postgres` | Stores blocks, transactions, logs and address rows        |
 | `indexer`  | Follows the chain tip, writes rows, handles reorgs        |
 | `api`      | Read-only JSON API the explorer calls (bearer-token auth) |
-| `nginx`    | TLS termination on `indexer-zcu.honest.money`             |
+| `nginx`    | TLS termination on `api.mempool.zerochill.com`             |
 
 Everything is Docker Compose with `restart: unless-stopped`, and Docker itself
 is enabled as a systemd service — so the whole stack comes back on its own
@@ -55,7 +55,7 @@ instance, so the IP survives a stop/start.
 Add an **A record**:
 
 ```
-indexer-zcu.honest.money  →  <the elastic IP>
+api.mempool.zerochill.com  →  <the elastic IP>
 ```
 
 Wait a couple of minutes before continuing.
@@ -109,7 +109,7 @@ In the Lovable project, add two secrets:
 
 | Secret               | Value                                      |
 |----------------------|--------------------------------------------|
-| `ZCU_INDEXER_URL`    | `https://indexer-zcu.honest.money`         |
+| `ZCU_INDEXER_URL`    | `https://api.mempool.zerochill.com`         |
 | `ZCU_INDEXER_TOKEN`  | the token the installer printed            |
 
 Then publish the app. Address history and the richlist go live immediately.
@@ -140,7 +140,7 @@ cd /opt/zcu-indexer && docker compose logs -f --tail=50 indexer
 
 ```bash
 curl -s -H "Authorization: Bearer YOUR_TOKEN" \
-  https://indexer-zcu.honest.money/stats
+  https://api.mempool.zerochill.com/stats
 ```
 
 **Restart just one service:**

@@ -17,7 +17,7 @@ set -euo pipefail
 REPO_URL="${REPO_URL:-https://github.com/blockchainmint1/zcu-mempool.git}"
 REPO_DIR="${REPO_DIR:-/opt/zcu-mempool}"
 STACK_DIR="${STACK_DIR:-/opt/zcu-indexer}"
-DOMAIN="${DOMAIN:-indexer-zcu.honest.money}"
+DOMAIN="${DOMAIN:-api.mempool.zerochill.com}"
 
 say() { printf '\n\033[1;36m==> %s\033[0m\n' "$1"; }
 die() { printf '\n\033[1;31mERROR: %s\033[0m\n' "$1" >&2; exit 1; }
