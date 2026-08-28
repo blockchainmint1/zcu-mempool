@@ -48,6 +48,9 @@ function authorized(req: http.IncomingMessage): boolean {
 }
 
 function intParam(v: string | null, fallback: number, min: number, max: number): number {
+  // Number(null) and Number("") are both 0, which would silently clamp an
+  // absent param to `min` instead of using the intended default.
+  if (v === null || v.trim() === "") return fallback;
   const n = Number(v);
   if (!Number.isFinite(n)) return fallback;
   return Math.min(max, Math.max(min, Math.trunc(n)));
