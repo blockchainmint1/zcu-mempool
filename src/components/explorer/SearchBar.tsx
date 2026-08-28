@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { classifySearch } from "@/lib/txc/format";
-import { esplora } from "@/lib/txc/esplora";
+import { classifySearch, normalizeHex } from "@/lib/zcu/format";
+import { zcu } from "@/lib/zcu/api";
 
 interface Props {
   variant?: "header" | "hero";
@@ -24,29 +24,25 @@ export function SearchBar({ variant = "header", autoFocus = false }: Props) {
     try {
       const kind = classifySearch(q);
       if (kind === "height") {
-        const hash = await esplora.blockByHeight(Number(q));
-        navigate({ to: "/block/$hash", params: { hash } });
+        navigate({ to: "/block/$hash", params: { hash: q } });
       } else if (kind === "address") {
-        // bech32 addresses are canonically lowercase
-        const addr = /^txc1/i.test(q) ? q.toLowerCase() : q;
-        navigate({ to: "/address/$addr", params: { addr } });
+        navigate({ to: "/address/$addr", params: { addr: normalizeHex(q) } });
       } else if (kind === "hash") {
-        navigate({ to: "/block/$hash", params: { hash: q.toLowerCase() } });
-      } else if (kind === "txid") {
-        // Try tx first; fall back to block lookup if it 404s.
+        // On an EVM chain a 32-byte hash is ambiguous: probe tx, then block.
+        const h = normalizeHex(q);
         try {
-          await esplora.txStatus(q.toLowerCase());
-          navigate({ to: "/tx/$txid", params: { txid: q.toLowerCase() } });
+          await zcu.tx(h);
+          navigate({ to: "/tx/$txid", params: { txid: h } });
         } catch {
           try {
-            await esplora.blockByHash(q.toLowerCase());
-            navigate({ to: "/block/$hash", params: { hash: q.toLowerCase() } });
+            await zcu.block(h);
+            navigate({ to: "/block/$hash", params: { hash: h } });
           } catch {
             setErr("Not found as transaction or block.");
           }
         }
       } else {
-        setErr("Enter a block height, hash, txid, or TXC address.");
+        setErr("Enter a block height, block/tx hash, or 0x… address.");
       }
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Lookup failed.");
@@ -64,7 +60,7 @@ export function SearchBar({ variant = "header", autoFocus = false }: Props) {
           autoFocus={autoFocus}
           value={value}
           onChange={(e) => { setValue(e.target.value); setErr(null); }}
-          placeholder="Search block height, hash, txid, or address (T… or txc1…)"
+          placeholder="Search block height, block/tx hash, or 0x… address"
           className={
             isHero
               ? "w-full pl-10 pr-28 py-3.5 rounded-md surface-2 border border-border focus:border-primary focus:outline-none font-mono text-sm"
@@ -84,9 +80,7 @@ export function SearchBar({ variant = "header", autoFocus = false }: Props) {
           {busy ? "…" : "Search"}
         </button>
       </div>
-      {err && (
-        <div className="mt-2 text-xs text-destructive font-mono">{err}</div>
-      )}
+      {err && <div className="mt-2 text-xs text-destructive font-mono">{err}</div>}
     </form>
   );
 }
