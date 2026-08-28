@@ -13,6 +13,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MiningRouteImport } from './routes/mining'
 import { Route as MempoolRouteImport } from './routes/mempool'
+import { Route as ManifestoRouteImport } from './routes/manifesto'
 import { Route as GraphsRouteImport } from './routes/graphs'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as BlocksRouteImport } from './routes/blocks'
@@ -52,6 +53,11 @@ const MiningRoute = MiningRouteImport.update({
 const MempoolRoute = MempoolRouteImport.update({
   id: '/mempool',
   path: '/mempool',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManifestoRoute = ManifestoRouteImport.update({
+  id: '/manifesto',
+  path: '/manifesto',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GraphsRoute = GraphsRouteImport.update({
@@ -162,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/blocks': typeof BlocksRoute
   '/docs': typeof DocsRoute
   '/graphs': typeof GraphsRoute
+  '/manifesto': typeof ManifestoRoute
   '/mempool': typeof MempoolRouteWithChildren
   '/mining': typeof MiningRoute
   '/privacy': typeof PrivacyRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/blocks': typeof BlocksRoute
   '/docs': typeof DocsRoute
   '/graphs': typeof GraphsRoute
+  '/manifesto': typeof ManifestoRoute
   '/mining': typeof MiningRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/blocks': typeof BlocksRoute
   '/docs': typeof DocsRoute
   '/graphs': typeof GraphsRoute
+  '/manifesto': typeof ManifestoRoute
   '/mempool': typeof MempoolRouteWithChildren
   '/mining': typeof MiningRoute
   '/privacy': typeof PrivacyRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/blocks'
     | '/docs'
     | '/graphs'
+    | '/manifesto'
     | '/mempool'
     | '/mining'
     | '/privacy'
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/blocks'
     | '/docs'
     | '/graphs'
+    | '/manifesto'
     | '/mining'
     | '/privacy'
     | '/terms'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/blocks'
     | '/docs'
     | '/graphs'
+    | '/manifesto'
     | '/mempool'
     | '/mining'
     | '/privacy'
@@ -320,6 +332,7 @@ export interface RootRouteChildren {
   BlocksRoute: typeof BlocksRoute
   DocsRoute: typeof DocsRoute
   GraphsRoute: typeof GraphsRoute
+  ManifestoRoute: typeof ManifestoRoute
   MempoolRoute: typeof MempoolRouteWithChildren
   MiningRoute: typeof MiningRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -366,6 +379,13 @@ declare module '@tanstack/react-router' {
       path: '/mempool'
       fullPath: '/mempool'
       preLoaderRoute: typeof MempoolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manifesto': {
+      id: '/manifesto'
+      path: '/manifesto'
+      fullPath: '/manifesto'
+      preLoaderRoute: typeof ManifestoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/graphs': {
@@ -541,6 +561,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlocksRoute: BlocksRoute,
   DocsRoute: DocsRoute,
   GraphsRoute: GraphsRoute,
+  ManifestoRoute: ManifestoRoute,
   MempoolRoute: MempoolRouteWithChildren,
   MiningRoute: MiningRoute,
   PrivacyRoute: PrivacyRoute,
