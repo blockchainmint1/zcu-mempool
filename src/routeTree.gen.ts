@@ -27,6 +27,7 @@ import { Route as ApiV1ChainRouteImport } from './routes/api/v1/chain'
 import { Route as ApiV1MempoolIndexRouteImport } from './routes/api/v1/mempool.index'
 import { Route as ApiV1BlocksIndexRouteImport } from './routes/api/v1/blocks.index'
 import { Route as ApiV1TxHashRouteImport } from './routes/api/v1/tx.$hash'
+import { Route as ApiV1MiningMinersRouteImport } from './routes/api/v1/mining.miners'
 import { Route as ApiV1MiningHashrateRouteImport } from './routes/api/v1/mining.hashrate'
 import { Route as ApiV1BlockIdRouteImport } from './routes/api/v1/block.$id'
 import { Route as ApiV1AddressAddrRouteImport } from './routes/api/v1/address.$addr'
@@ -123,6 +124,11 @@ const ApiV1TxHashRoute = ApiV1TxHashRouteImport.update({
   path: '/api/v1/tx/$hash',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1MiningMinersRoute = ApiV1MiningMinersRouteImport.update({
+  id: '/api/v1/mining/miners',
+  path: '/api/v1/mining/miners',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1MiningHashrateRoute = ApiV1MiningHashrateRouteImport.update({
   id: '/api/v1/mining/hashrate',
   path: '/api/v1/mining/hashrate',
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/address/$addr': typeof ApiV1AddressAddrRoute
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
   '/api/v1/mining/hashrate': typeof ApiV1MiningHashrateRoute
+  '/api/v1/mining/miners': typeof ApiV1MiningMinersRoute
   '/api/v1/tx/$hash': typeof ApiV1TxHashRoute
   '/api/v1/blocks/': typeof ApiV1BlocksIndexRoute
   '/api/v1/mempool/': typeof ApiV1MempoolIndexRoute
@@ -192,6 +199,7 @@ export interface FileRoutesByTo {
   '/api/v1/address/$addr': typeof ApiV1AddressAddrRoute
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
   '/api/v1/mining/hashrate': typeof ApiV1MiningHashrateRoute
+  '/api/v1/mining/miners': typeof ApiV1MiningMinersRoute
   '/api/v1/tx/$hash': typeof ApiV1TxHashRoute
   '/api/v1/blocks': typeof ApiV1BlocksIndexRoute
   '/api/v1/mempool': typeof ApiV1MempoolIndexRoute
@@ -218,6 +226,7 @@ export interface FileRoutesById {
   '/api/v1/address/$addr': typeof ApiV1AddressAddrRoute
   '/api/v1/block/$id': typeof ApiV1BlockIdRouteWithChildren
   '/api/v1/mining/hashrate': typeof ApiV1MiningHashrateRoute
+  '/api/v1/mining/miners': typeof ApiV1MiningMinersRoute
   '/api/v1/tx/$hash': typeof ApiV1TxHashRoute
   '/api/v1/blocks/': typeof ApiV1BlocksIndexRoute
   '/api/v1/mempool/': typeof ApiV1MempoolIndexRoute
@@ -245,6 +254,7 @@ export interface FileRouteTypes {
     | '/api/v1/address/$addr'
     | '/api/v1/block/$id'
     | '/api/v1/mining/hashrate'
+    | '/api/v1/mining/miners'
     | '/api/v1/tx/$hash'
     | '/api/v1/blocks/'
     | '/api/v1/mempool/'
@@ -269,6 +279,7 @@ export interface FileRouteTypes {
     | '/api/v1/address/$addr'
     | '/api/v1/block/$id'
     | '/api/v1/mining/hashrate'
+    | '/api/v1/mining/miners'
     | '/api/v1/tx/$hash'
     | '/api/v1/blocks'
     | '/api/v1/mempool'
@@ -294,6 +305,7 @@ export interface FileRouteTypes {
     | '/api/v1/address/$addr'
     | '/api/v1/block/$id'
     | '/api/v1/mining/hashrate'
+    | '/api/v1/mining/miners'
     | '/api/v1/tx/$hash'
     | '/api/v1/blocks/'
     | '/api/v1/mempool/'
@@ -318,6 +330,7 @@ export interface RootRouteChildren {
   ApiV1AddressAddrRoute: typeof ApiV1AddressAddrRoute
   ApiV1BlockIdRoute: typeof ApiV1BlockIdRouteWithChildren
   ApiV1MiningHashrateRoute: typeof ApiV1MiningHashrateRoute
+  ApiV1MiningMinersRoute: typeof ApiV1MiningMinersRoute
   ApiV1TxHashRoute: typeof ApiV1TxHashRoute
   ApiV1BlocksIndexRoute: typeof ApiV1BlocksIndexRoute
   ApiV1MempoolIndexRoute: typeof ApiV1MempoolIndexRoute
@@ -452,6 +465,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1TxHashRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/mining/miners': {
+      id: '/api/v1/mining/miners'
+      path: '/api/v1/mining/miners'
+      fullPath: '/api/v1/mining/miners'
+      preLoaderRoute: typeof ApiV1MiningMinersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/mining/hashrate': {
       id: '/api/v1/mining/hashrate'
       path: '/api/v1/mining/hashrate'
@@ -532,6 +552,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1AddressAddrRoute: ApiV1AddressAddrRoute,
   ApiV1BlockIdRoute: ApiV1BlockIdRouteWithChildren,
   ApiV1MiningHashrateRoute: ApiV1MiningHashrateRoute,
+  ApiV1MiningMinersRoute: ApiV1MiningMinersRoute,
   ApiV1TxHashRoute: ApiV1TxHashRoute,
   ApiV1BlocksIndexRoute: ApiV1BlocksIndexRoute,
   ApiV1MempoolIndexRoute: ApiV1MempoolIndexRoute,
