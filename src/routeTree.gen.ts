@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as MiningRouteImport } from './routes/mining'
 import { Route as MempoolRouteImport } from './routes/mempool'
 import { Route as GraphsRouteImport } from './routes/graphs'
@@ -32,6 +33,11 @@ import { Route as ApiV1AddressAddrRouteImport } from './routes/api/v1/address.$a
 import { Route as ApiV1BlocksTipHeightRouteImport } from './routes/api/v1/blocks.tip.height'
 import { Route as ApiV1BlockIdTxsRouteImport } from './routes/api/v1/block.$id.txs'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MiningRoute = MiningRouteImport.update({
   id: '/mining',
   path: '/mining',
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/graphs': typeof GraphsRoute
   '/mempool': typeof MempoolRouteWithChildren
   '/mining': typeof MiningRoute
+  '/terms': typeof TermsRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
   '/tx/$txid': typeof TxTxidRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/graphs': typeof GraphsRoute
   '/mining': typeof MiningRoute
+  '/terms': typeof TermsRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
   '/tx/$txid': typeof TxTxidRoute
@@ -200,6 +208,7 @@ export interface FileRoutesById {
   '/graphs': typeof GraphsRoute
   '/mempool': typeof MempoolRouteWithChildren
   '/mining': typeof MiningRoute
+  '/terms': typeof TermsRoute
   '/address/$addr': typeof AddressAddrRoute
   '/block/$hash': typeof BlockHashRoute
   '/tx/$txid': typeof TxTxidRoute
@@ -226,6 +235,7 @@ export interface FileRouteTypes {
     | '/graphs'
     | '/mempool'
     | '/mining'
+    | '/terms'
     | '/address/$addr'
     | '/block/$hash'
     | '/tx/$txid'
@@ -249,6 +259,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/graphs'
     | '/mining'
+    | '/terms'
     | '/address/$addr'
     | '/block/$hash'
     | '/tx/$txid'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/graphs'
     | '/mempool'
     | '/mining'
+    | '/terms'
     | '/address/$addr'
     | '/block/$hash'
     | '/tx/$txid'
@@ -298,6 +310,7 @@ export interface RootRouteChildren {
   GraphsRoute: typeof GraphsRoute
   MempoolRoute: typeof MempoolRouteWithChildren
   MiningRoute: typeof MiningRoute
+  TermsRoute: typeof TermsRoute
   AddressAddrRoute: typeof AddressAddrRoute
   BlockHashRoute: typeof BlockHashRoute
   TxTxidRoute: typeof TxTxidRoute
@@ -314,6 +327,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mining': {
       id: '/mining'
       path: '/mining'
@@ -503,6 +523,7 @@ const rootRouteChildren: RootRouteChildren = {
   GraphsRoute: GraphsRoute,
   MempoolRoute: MempoolRouteWithChildren,
   MiningRoute: MiningRoute,
+  TermsRoute: TermsRoute,
   AddressAddrRoute: AddressAddrRoute,
   BlockHashRoute: BlockHashRoute,
   TxTxidRoute: TxTxidRoute,
