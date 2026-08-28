@@ -188,7 +188,7 @@ function Footer() {
           <div className="font-display text-xs uppercase mb-2 text-muted-foreground">Network</div>
           <ul className="space-y-1 font-mono text-xs">
             <li>Chain ID: <span className="text-foreground">90031273</span></li>
-            <li>Block time: <span className="text-foreground">~60 s</span></li>
+            <li>Block time: <span className="text-foreground">variable</span></li>
             <li>Consensus: <span className="text-foreground">Scrypt + AuxPoW</span></li>
             <li>RPC: <span className="text-foreground">node-zcu.honest.money</span></li>
           </ul>
