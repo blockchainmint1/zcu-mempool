@@ -20,6 +20,13 @@ async function getServerEntry(): Promise<ServerEntry> {
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
+function isDisconnectedRequest(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const coded = error as Error & { code?: string; cause?: unknown };
+  if (coded.code === "ECONNRESET" || coded.message.toLowerCase() === "aborted") return true;
+  return coded.cause !== undefined && isDisconnectedRequest(coded.cause);
+}
+
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
@@ -30,7 +37,13 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
     return response;
   }
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
+  const captured = consumeLastCapturedError();
+  // Browsers routinely cancel in-flight document requests during refreshes,
+  // navigation, and HMR. That is not an application failure and must not be
+  // promoted to the full-page SSR error screen.
+  if (isDisconnectedRequest(captured)) return response;
+
+  console.error(captured ?? new Error(`h3 swallowed SSR error: ${body}`));
   return new Response(renderErrorPage(), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
@@ -44,6 +57,9 @@ export default {
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
+      if (request.signal.aborted || isDisconnectedRequest(error)) {
+        return new Response(null, { status: 499, statusText: "Client Closed Request" });
+      }
       console.error(error);
       return new Response(renderErrorPage(), {
         status: 500,

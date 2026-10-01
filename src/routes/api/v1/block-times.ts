@@ -8,7 +8,9 @@ const WINDOWS = ["blocks", "1d", "7d", "30d"] as const;
 type Window = (typeof WINDOWS)[number];
 
 async function recentFallback(window: Window): Promise<ZcuBlockTimes> {
-  const blocks = (await getRecentBlocks(500)).reverse();
+  // Keep the fallback intentionally small: the live node has no historical
+  // aggregation endpoint and giant RPC batches can outlive a browser request.
+  const blocks = (await getRecentBlocks(120)).reverse();
   const series = blocks.slice(1).flatMap((block, i) => {
     const interval = block.timestamp - blocks[i]!.timestamp;
     return interval >= 0 && interval < 86400
