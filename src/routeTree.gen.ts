@@ -31,6 +31,7 @@ import { Route as AddressAddrRouteImport } from './routes/address.$addr'
 import { Route as ApiV1VerifyRouteImport } from './routes/api/v1/verify'
 import { Route as ApiV1RichlistRouteImport } from './routes/api/v1/richlist'
 import { Route as ApiV1ChainRouteImport } from './routes/api/v1/chain'
+import { Route as ApiV1BlockTimesRouteImport } from './routes/api/v1/block-times'
 import { Route as ApiV1TokensIndexRouteImport } from './routes/api/v1/tokens.index'
 import { Route as ApiV1MempoolIndexRouteImport } from './routes/api/v1/mempool.index'
 import { Route as ApiV1BlocksIndexRouteImport } from './routes/api/v1/blocks.index'
@@ -155,6 +156,11 @@ const ApiV1ChainRoute = ApiV1ChainRouteImport.update({
   path: '/api/v1/chain',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1BlockTimesRoute = ApiV1BlockTimesRouteImport.update({
+  id: '/api/v1/block-times',
+  path: '/api/v1/block-times',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1TokensIndexRoute = ApiV1TokensIndexRouteImport.update({
   id: '/api/v1/tokens/',
   path: '/api/v1/tokens/',
@@ -241,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/token/$addr': typeof TokenAddrRoute
   '/tx/$txid': typeof TxTxidRoute
   '/mempool/': typeof MempoolIndexRoute
+  '/api/v1/block-times': typeof ApiV1BlockTimesRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
   '/api/v1/richlist': typeof ApiV1RichlistRoute
   '/api/v1/verify': typeof ApiV1VerifyRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByTo {
   '/token/$addr': typeof TokenAddrRoute
   '/tx/$txid': typeof TxTxidRoute
   '/mempool': typeof MempoolIndexRoute
+  '/api/v1/block-times': typeof ApiV1BlockTimesRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
   '/api/v1/richlist': typeof ApiV1RichlistRoute
   '/api/v1/verify': typeof ApiV1VerifyRoute
@@ -315,6 +323,7 @@ export interface FileRoutesById {
   '/token/$addr': typeof TokenAddrRoute
   '/tx/$txid': typeof TxTxidRoute
   '/mempool/': typeof MempoolIndexRoute
+  '/api/v1/block-times': typeof ApiV1BlockTimesRoute
   '/api/v1/chain': typeof ApiV1ChainRoute
   '/api/v1/richlist': typeof ApiV1RichlistRoute
   '/api/v1/verify': typeof ApiV1VerifyRoute
@@ -354,6 +363,7 @@ export interface FileRouteTypes {
     | '/token/$addr'
     | '/tx/$txid'
     | '/mempool/'
+    | '/api/v1/block-times'
     | '/api/v1/chain'
     | '/api/v1/richlist'
     | '/api/v1/verify'
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/token/$addr'
     | '/tx/$txid'
     | '/mempool'
+    | '/api/v1/block-times'
     | '/api/v1/chain'
     | '/api/v1/richlist'
     | '/api/v1/verify'
@@ -427,6 +438,7 @@ export interface FileRouteTypes {
     | '/token/$addr'
     | '/tx/$txid'
     | '/mempool/'
+    | '/api/v1/block-times'
     | '/api/v1/chain'
     | '/api/v1/richlist'
     | '/api/v1/verify'
@@ -464,6 +476,7 @@ export interface RootRouteChildren {
   BlockHashRoute: typeof BlockHashRoute
   TokenAddrRoute: typeof TokenAddrRoute
   TxTxidRoute: typeof TxTxidRoute
+  ApiV1BlockTimesRoute: typeof ApiV1BlockTimesRoute
   ApiV1ChainRoute: typeof ApiV1ChainRoute
   ApiV1RichlistRoute: typeof ApiV1RichlistRoute
   ApiV1VerifyRoute: typeof ApiV1VerifyRoute
@@ -636,6 +649,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1ChainRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/block-times': {
+      id: '/api/v1/block-times'
+      path: '/api/v1/block-times'
+      fullPath: '/api/v1/block-times'
+      preLoaderRoute: typeof ApiV1BlockTimesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/tokens/': {
       id: '/api/v1/tokens/'
       path: '/api/v1/tokens'
@@ -783,6 +803,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlockHashRoute: BlockHashRoute,
   TokenAddrRoute: TokenAddrRoute,
   TxTxidRoute: TxTxidRoute,
+  ApiV1BlockTimesRoute: ApiV1BlockTimesRoute,
   ApiV1ChainRoute: ApiV1ChainRoute,
   ApiV1RichlistRoute: ApiV1RichlistRoute,
   ApiV1VerifyRoute: ApiV1VerifyRoute,
