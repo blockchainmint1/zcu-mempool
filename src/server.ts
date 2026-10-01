@@ -43,7 +43,11 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   // promoted to the full-page SSR error screen.
   if (isDisconnectedRequest(captured)) return response;
 
-  console.error(captured ?? new Error(`h3 swallowed SSR error: ${body}`));
+  // When the request body has already disappeared, h3 only exposes its
+  // generic HTTPError envelope. There is no actionable app error to report;
+  // returning the fallback page is sufficient and avoids flagging a routine
+  // navigation cancellation as a preview crash.
+  if (captured !== undefined) console.error(captured);
   return new Response(renderErrorPage(), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
