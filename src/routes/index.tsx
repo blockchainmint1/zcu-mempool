@@ -14,6 +14,7 @@ import { StatTile } from "@/components/explorer/StatTile";
 import { ConfirmedBlocksStrip } from "@/components/explorer/ConfirmedBlocksStrip";
 import { MempoolBlocksViz } from "@/components/explorer/MempoolBlocksViz";
 import { TxListRow } from "@/components/explorer/TxListRow";
+import { BlockTimeChart } from "@/components/explorer/BlockTimeChart";
 
 const TITLE = "ZCU Explorer — Zero Chill Units Block Explorer";
 const DESC =
@@ -83,6 +84,8 @@ function Dashboard() {
           hint={avgBlockTime ? `${avgBlockTime.toFixed(1)}s block time` : undefined}
         />
       </section>
+
+      <BlockTimeChart />
 
       <section className="space-y-3">
         <div className="flex items-baseline justify-between">

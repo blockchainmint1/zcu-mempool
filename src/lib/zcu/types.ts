@@ -117,6 +117,24 @@ export interface ZcuHashrate {
   series: Array<{ timestamp: number; height: number; difficulty: number; blockTimeSec: number }>;
 }
 
+export interface ZcuBlockTimePoint {
+  timestamp: number;
+  height?: number;
+  avg: number;
+  min?: number;
+  max?: number;
+}
+
+export interface ZcuBlockTimes {
+  window: "blocks" | "1d" | "7d" | "30d";
+  targetBlockTimeSec: number;
+  avgBlockTimeSec: number;
+  fastestSec: number;
+  slowestSec: number;
+  sampledIntervals: number;
+  series: ZcuBlockTimePoint[];
+}
+
 export interface ZcuMiner {
   address: string;
   blockCount: number;

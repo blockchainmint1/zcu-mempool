@@ -33,9 +33,10 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const message = error instanceof Error ? error.message : "Unknown error";
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -43,7 +44,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           Couldn't fetch from the chain
         </h1>
         <p className="mt-2 text-sm text-muted-foreground font-mono break-all">
-          {import.meta.env.DEV ? error.message : "Something went wrong. Please try again."}
+          {import.meta.env.DEV ? message : "Something went wrong. Please try again."}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button

@@ -19,6 +19,7 @@ import type {
   ZcuTokenList,
   ZcuTokenDetail,
   ZcuContract,
+  ZcuBlockTimes,
 } from "./types";
 
 async function get<T>(path: string): Promise<T> {
@@ -75,4 +76,8 @@ export const zcu = {
   hashrate: (sample = 120) => get<ZcuHashrate>(`/mining/hashrate?sample=${sample}`),
   miners: (window = 200) =>
     get<{ miners: ZcuMiner[]; blockCount: number }>(`/mining/miners?window=${window}`),
+  blockTimes: (window: "blocks" | "1d" | "7d" | "30d" = "7d") =>
+    get<ZcuBlockTimes>(
+      window === "blocks" ? "/block-times?mode=blocks" : `/block-times?window=${window}`,
+    ),
 };

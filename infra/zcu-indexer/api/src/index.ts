@@ -262,6 +262,92 @@ async function stats() {
   };
 }
 
+type BlockTimeWindow = "1d" | "7d" | "30d";
+
+const BLOCK_TIME_WINDOWS: Record<
+  BlockTimeWindow,
+  { seconds: number; bucketSeconds: number }
+> = {
+  "1d": { seconds: 24 * 3600, bucketSeconds: 15 * 60 },
+  "7d": { seconds: 7 * 24 * 3600, bucketSeconds: 2 * 3600 },
+  "30d": { seconds: 30 * 24 * 3600, bucketSeconds: 8 * 3600 },
+};
+
+async function blockTimes(window: BlockTimeWindow, perBlock: boolean) {
+  const targetBlockTimeSec = 60;
+  const config = BLOCK_TIME_WINDOWS[window];
+
+  if (perBlock) {
+    const { rows } = await pool.query<{ number: number; timestamp: number }>(
+      `SELECT number, timestamp
+         FROM blocks
+        ORDER BY number DESC
+        LIMIT 106`,
+    );
+    const ordered = rows.reverse();
+    const series = ordered.slice(1).flatMap((block, i) => {
+      const interval = block.timestamp - ordered[i]!.timestamp;
+      return interval >= 0 && interval < 24 * 3600
+        ? [{ timestamp: block.timestamp, height: block.number, avg: interval }]
+        : [];
+    });
+    const values = series.map((point) => point.avg);
+    if (values.length === 0) throw new Error("No block intervals available");
+    return {
+      window: "blocks",
+      targetBlockTimeSec,
+      avgBlockTimeSec: values.reduce((sum, value) => sum + value, 0) / values.length,
+      fastestSec: Math.min(...values),
+      slowestSec: Math.max(...values),
+      sampledIntervals: values.length,
+      series,
+    };
+  }
+
+  const cutoff = Math.floor(Date.now() / 1000) - config.seconds;
+  const { rows } = await pool.query<{
+    timestamp: number;
+    avg: number;
+    min: number;
+    max: number;
+    samples: number;
+  }>(
+    `WITH intervals AS (
+       SELECT timestamp,
+              timestamp - lag(timestamp) OVER (ORDER BY number) AS interval_sec
+         FROM blocks
+     ), valid AS (
+       SELECT timestamp, interval_sec
+         FROM intervals
+        WHERE timestamp >= $1
+          AND interval_sec >= 0
+          AND interval_sec < 86400
+     )
+     SELECT (floor(timestamp / $2) * $2)::bigint AS timestamp,
+            avg(interval_sec)::float8 AS avg,
+            min(interval_sec)::bigint AS min,
+            max(interval_sec)::bigint AS max,
+            count(*)::bigint AS samples
+       FROM valid
+      GROUP BY floor(timestamp / $2)
+      ORDER BY timestamp`,
+    [cutoff, config.bucketSeconds],
+  );
+  if (rows.length === 0) throw new Error("No block intervals available");
+
+  const sampledIntervals = rows.reduce((sum, row) => sum + row.samples, 0);
+  const weightedTotal = rows.reduce((sum, row) => sum + row.avg * row.samples, 0);
+  return {
+    window,
+    targetBlockTimeSec,
+    avgBlockTimeSec: weightedTotal / sampledIntervals,
+    fastestSec: Math.min(...rows.map((row) => row.min)),
+    slowestSec: Math.max(...rows.map((row) => row.max)),
+    sampledIntervals,
+    series: rows.map(({ timestamp, avg, min, max }) => ({ timestamp, avg, min, max })),
+  };
+}
+
 // ---------- router ----------
 
 const MAX_BODY_BYTES = 1_000_000;
@@ -341,6 +427,18 @@ const server = http.createServer(async (req, res) => {
     const offset = intParam(url.searchParams.get("offset"), 0, 0, 1_000_000);
 
     if (path === "/stats") return json(res, 200, await stats());
+
+    if (path === "/block-times") {
+      const requested = url.searchParams.get("window") ?? "7d";
+      if (!(requested in BLOCK_TIME_WINDOWS)) {
+        return json(res, 400, { error: "Invalid window — use 1d, 7d, or 30d" });
+      }
+      return json(
+        res,
+        200,
+        await blockTimes(requested as BlockTimeWindow, url.searchParams.get("mode") === "blocks"),
+      );
+    }
 
     if (path === "/richlist") return json(res, 200, await richlist(limit, offset));
 

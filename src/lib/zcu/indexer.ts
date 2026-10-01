@@ -86,6 +86,24 @@ export interface IndexerStats {
   latestBlockTimestamp: number | null;
 }
 
+export interface IndexerBlockTimePoint {
+  timestamp: number;
+  height?: number;
+  avg: number;
+  min?: number;
+  max?: number;
+}
+
+export interface IndexerBlockTimes {
+  window: "blocks" | "1d" | "7d" | "30d";
+  targetBlockTimeSec: number;
+  avgBlockTimeSec: number;
+  fastestSec: number;
+  slowestSec: number;
+  sampledIntervals: number;
+  series: IndexerBlockTimePoint[];
+}
+
 /** Whether an indexer is configured at all. */
 export function indexerConfigured(): boolean {
   return !!process.env["ZCU_INDEXER_URL"];
@@ -153,6 +171,14 @@ export function getRichlist(limit = 100, offset = 0): Promise<IndexerRichlist | 
 
 export function getIndexerStats(): Promise<IndexerStats | null> {
   return call<IndexerStats>("/stats");
+}
+
+export function getBlockTimes(
+  window: "blocks" | "1d" | "7d" | "30d",
+): Promise<IndexerBlockTimes | null> {
+  return call<IndexerBlockTimes>(
+    window === "blocks" ? "/block-times?mode=blocks" : `/block-times?window=${window}`,
+  );
 }
 
 // ---------- tokens ----------

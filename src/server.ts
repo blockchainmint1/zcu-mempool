@@ -1,6 +1,6 @@
 import "./lib/error-capture";
 
-import { consumeLastCapturedError } from "./lib/error-capture";
+import { consumeLastCapturedError, isDisconnectedRequest } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
 type ServerEntry = {
@@ -30,7 +30,17 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
     return response;
   }
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
+  const captured = consumeLastCapturedError();
+  // Browsers routinely cancel in-flight document requests during refreshes,
+  // navigation, and HMR. That is not an application failure and must not be
+  // promoted to the full-page SSR error screen.
+  if (isDisconnectedRequest(captured)) return response;
+
+  // When the request body has already disappeared, h3 only exposes its
+  // generic HTTPError envelope. There is no actionable app error to report;
+  // returning the fallback page is sufficient and avoids flagging a routine
+  // navigation cancellation as a preview crash.
+  if (captured !== undefined) console.error(captured);
   return new Response(renderErrorPage(), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
@@ -44,6 +54,9 @@ export default {
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
+      if (request.signal.aborted || isDisconnectedRequest(error)) {
+        return new Response(null, { status: 499, statusText: "Client Closed Request" });
+      }
       console.error(error);
       return new Response(renderErrorPage(), {
         status: 500,
