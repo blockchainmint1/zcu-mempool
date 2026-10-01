@@ -1,6 +1,6 @@
 import "./lib/error-capture";
 
-import { consumeLastCapturedError } from "./lib/error-capture";
+import { consumeLastCapturedError, isDisconnectedRequest } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
 type ServerEntry = {
@@ -20,13 +20,6 @@ async function getServerEntry(): Promise<ServerEntry> {
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
-function isDisconnectedRequest(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  const coded = error as Error & { code?: string; cause?: unknown };
-  if (coded.code === "ECONNRESET" || coded.message.toLowerCase() === "aborted") return true;
-  return coded.cause !== undefined && isDisconnectedRequest(coded.cause);
-}
-
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
