@@ -8,18 +8,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { zcu } from "./api";
-import type { ZcuBlock, ZcuChainInfo, ZcuMempool } from "./types";
-
-export type FeedStatus = "connecting" | "live" | "polling" | "offline";
-
-export interface ZcuFeedSnapshot {
-  chain: ZcuChainInfo | null;
-  tipHeight: number | null;
-  blocks: ZcuBlock[];
-  mempool: ZcuMempool | null;
-  status: FeedStatus;
-  lastTick: number;
-}
+import { updateFeed, type ZcuFeedSnapshot } from "./feed-state";
+export type { FeedStatus, ZcuFeedSnapshot } from "./feed-state";
 
 const EMPTY: ZcuFeedSnapshot = {
   chain: null,
@@ -39,34 +29,24 @@ export function useZcuFeed(): ZcuFeedSnapshot {
 
   useEffect(() => {
     let cancelled = false;
+    let inFlight = false;
 
     async function poll() {
-      const [chain, blocks, mempool] = await Promise.allSettled([
+      if (inFlight) return;
+      inFlight = true;
+      const results = await Promise.allSettled([
         zcu.chainInfo(),
         zcu.recentBlocks(15),
         zcu.mempool(),
       ]);
+      inFlight = false;
       if (cancelled) return;
 
-      setSnap((prev) => {
-        // Only overwrite a field when its fetch succeeded, so one flaky
-        // upstream call can't blank the whole dashboard.
-        const anyOk =
-          chain.status === "fulfilled" ||
-          blocks.status === "fulfilled" ||
-          mempool.status === "fulfilled";
-        return {
-          chain: chain.status === "fulfilled" ? chain.value : prev.chain,
-          tipHeight:
-            chain.status === "fulfilled" ? chain.value.tipHeight : prev.tipHeight,
-          blocks: blocks.status === "fulfilled" ? blocks.value : prev.blocks,
-          mempool: mempool.status === "fulfilled" ? mempool.value : prev.mempool,
-          status: anyOk ? "live" : "offline",
-          lastTick: Date.now(),
-        };
-      });
-
-      qc.invalidateQueries({ queryKey: ["zcu"], exact: false });
+      setSnap((prev) => updateFeed(prev, results, Date.now()));
+      // Failed polling must not reset chart retries every ten seconds.
+      if (results.every((result) => result.status === "fulfilled")) {
+        void qc.invalidateQueries({ queryKey: ["zcu"], exact: false });
+      }
     }
 
     poll();

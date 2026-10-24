@@ -27,6 +27,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: DESC },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESC },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Dashboard,
@@ -37,9 +39,10 @@ function Dashboard() {
   const { chain, blocks, mempool } = feed;
 
   const latest = blocks[0];
+  const oldest = blocks.at(-1);
   const avgBlockTime =
-    blocks.length > 1
-      ? (blocks[0]!.timestamp - blocks[blocks.length - 1]!.timestamp) / (blocks.length - 1)
+    blocks.length > 1 && latest && oldest
+      ? (latest.timestamp - oldest.timestamp) / (blocks.length - 1)
       : null;
   const hashrate =
     latest && avgBlockTime && avgBlockTime > 0
@@ -61,6 +64,16 @@ function Dashboard() {
         </p>
         <SearchBar variant="hero" />
       </section>
+
+      {feed.status === "offline" && (
+        <div role="status" className="border-l-4 border-primary bg-surface-2 px-4 py-3 text-sm">
+          <p className="font-semibold text-foreground">ZCU chain connection unavailable</p>
+          <p className="mt-1 text-muted-foreground">
+            The explorer cannot reach the ZCU node right now. Automatically checking for recovery.
+            {feed.lastTick > 0 ? " Previously loaded values may be out of date." : " Live values are unavailable—not zero."}
+          </p>
+        </div>
+      )}
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatTile
@@ -118,7 +131,7 @@ function Dashboard() {
           </h2>
           {pendingTxs.length === 0 ? (
             <div className="rounded-md surface-2 border border-border px-4 py-8 text-sm text-muted-foreground text-center">
-              Nothing pending right now.
+              {mempool ? "Nothing pending right now." : "Pending transaction data is unavailable."}
             </div>
           ) : (
             <div className="space-y-2">
