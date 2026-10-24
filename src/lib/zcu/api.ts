@@ -23,7 +23,7 @@ import type {
 } from "./types";
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${ZCU_API_BASE}${path}`);
+  const res = await fetch(`${ZCU_API_BASE}${path}`, { signal: AbortSignal.timeout(15_000) });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`API ${path} → ${res.status}${body ? `: ${body.slice(0, 160)}` : ""}`);

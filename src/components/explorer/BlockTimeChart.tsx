@@ -48,7 +48,7 @@ export function BlockTimeChart() {
     queryFn: () => zcu.blockTimes(window),
     refetchInterval: 5 * 60_000,
     staleTime: 5 * 60_000,
-    retry: 2,
+    retry: false,
   });
   const target = query.data?.targetBlockTimeSec ?? 60;
   const slowThreshold = target * 2.5;
@@ -96,9 +96,9 @@ export function BlockTimeChart() {
           Measuring block intervals…
         </div>
       )}
-      {query.isError && (
+      {query.isError && !query.data && (
         <div className="h-56 flex items-center justify-center text-xs text-muted-foreground">
-          Couldn&apos;t compute block times right now.
+          Block-time data is temporarily unavailable.
         </div>
       )}
       {query.data && query.data.series.length > 0 && (

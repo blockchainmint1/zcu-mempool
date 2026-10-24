@@ -18,7 +18,7 @@ export function MempoolBlocksViz({ mempool }: Props) {
   if (!mempool || total === 0) {
     return (
       <div className="rounded-md surface-2 border border-border px-4 py-8 text-sm text-muted-foreground text-center">
-        Txpool is empty — nothing is waiting to be mined.
+        {mempool ? "Txpool is empty — nothing is waiting to be mined." : "Txpool data is unavailable."}
       </div>
     );
   }
