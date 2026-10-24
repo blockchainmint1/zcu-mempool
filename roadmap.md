@@ -4,4 +4,4 @@
 - [x] Add indexed ZCU block-time history and explorer API access.
 - [x] Add the ZCU dashboard chart with average, target, fastest, and slowest times.
 - [x] Verify package checks, API behavior, and desktop/mobile rendering.
-- [ ] Verify outage handling: visible warning, retained data, bounded polling, and no blank dashboard.
+- [x] Verify outage handling: visible warning, retained data, bounded polling, and no blank dashboard.
